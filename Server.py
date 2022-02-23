@@ -2,14 +2,14 @@ import os
 import socket
 import threading
 
-SERVERADDR = ("127.0.0.1", 55000)
+SERVERADDR = ("", 55000)
 SIZE = 1024
 
 clients = []
 active_sockets = {}
 
 
-def client_main(client_sock: socket.socket, client_addr):
+def client_main(client_sock, client_addr):
     global clients
     global active_sockets
 
@@ -27,19 +27,19 @@ def client_main(client_sock: socket.socket, client_addr):
         elif cmd == "LOGIN":
             name = msg[1]
             if name in clients:
-                client_sock.send("Error@User name already exists in the sistem\n".encode('utf-8'))
+                client_sock.send("Error@User name already exists in the system\n".encode('utf-8'))
             else:
                 client_sock.send("OK@Logged In\n".encode('utf-8'))
                 clients.append(name)
                 active_sockets[name] = client_sock
 
         elif cmd == "SHOWFILES":
-            msg = "OK@"
+            msg = "SHOWFILES@"
             msg += '\n'.join(file for file in os.listdir(""))
             client_sock.send(msg.encode('utf-8'))
 
         elif cmd == "SHOWUSERS":
-            msg = "OK@"
+            msg = "SHOWUSERS@"
             msg += '\n'.join(c for c in clients)
             client_sock.send(msg.encode('utf-8'))
 
@@ -63,8 +63,9 @@ if __name__ == '__main__':
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind(SERVERADDR)
 
-    server.listen()
+    server.listen(15)
 
     while True:
         client, addr = server.accept()
         thread = threading.Thread(target=client_main, args=(client, addr))
+        thread.start()

@@ -7,7 +7,7 @@ class Client:
     def __init__(self, name=""):
         self.name = name
         self.connected = False
-        self.serverAddr = ("127.0.0.1", 55000)
+        self.serverAddr = ("10.0.0.5", 55000)
         self.client_sock = socket.socket()
 
     def __str__(self):
