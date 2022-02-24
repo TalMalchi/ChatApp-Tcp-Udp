@@ -197,6 +197,7 @@ class read_trd(threading.Thread):
                 elif cmd == "SHOWFILES":
                     print(data)
                     files = [x for x in data.split('\n')]
+                    print(files)
                     self.gui.window["-FILE LIST2-"].update(values=files)
 
                 elif cmd == "SHOWUSERS":
