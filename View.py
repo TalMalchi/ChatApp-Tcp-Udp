@@ -3,6 +3,7 @@ import socket
 import threading
 
 from PySimpleGUI import *
+
 ChatSize = 20
 serverAddr = ("10.0.0.5", 55000)
 
@@ -14,7 +15,7 @@ class GUI:
         self.window: PySimpleGUI.Window = None
         self.window_length = 1024
         self.window_height = 768
-        self.message_queue:list =[]
+        self.message_queue: list = []
 
     def welcome_screen(self):
         welcome = [
@@ -90,8 +91,8 @@ class GUI:
                 #     print("File Written")
 
             if event == "-USERS-":
-                data = self.sock.send("SHOWUSERS@".encode('utf-8'))
-
+                self.sock.send("SHOWUSERS@".encode('utf-8'))
+                self.sock.setsockopt()
             if event == "-USERS LIST-":
                 if len(values["-USERS LIST-"]) > 0:
                     user_name = values["-USERS LIST-"][0]
@@ -140,8 +141,8 @@ class GUI:
                 ],
                 [
                     self.gui.Text("Chat"),
-                    self.gui.Text("Server Files", pad=((550,0),0)),
-                    self.gui.Text("Online",pad = ((235,0),0))
+                    self.gui.Text("Server Files", pad=((550, 0), 0)),
+                    self.gui.Text("Online", pad=((235, 0), 0))
                 ]
                 ,
                 [
@@ -150,9 +151,9 @@ class GUI:
                     ),
                     self.gui.Listbox(
                         values=[], enable_events=True, size=(40, 30), key="-FILE LIST2-"
-                    ),  self.gui.Listbox(
-                        values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
-                    )
+                    ), self.gui.Listbox(
+                    values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
+                )
 
                 ],
 
@@ -239,7 +240,7 @@ class read_trd(threading.Thread):
                     self.gui.window["-Chat-"].update(values=self.gui.message_queue)
                 elif cmd == "PMSG":
                     name = data[:data.find("@")]
-                    chat_msg = data[data.find("@")+1:]
+                    chat_msg = data[data.find("@") + 1:]
                     if self.gui.message_queue.__len__() >= ChatSize:
                         self.gui.message_queue.pop(0)
                     self.gui.message_queue.append(f"(Private) {name} : {chat_msg}")
@@ -263,3 +264,9 @@ class read_trd(threading.Thread):
 if __name__ == '__main__':
     gui = GUI()
     gui.welcome_screen()
+
+# TODO Checking about cc algorithm setsockopt tcp
+# TODO Addind UDP sending file threads/sockets
+# TODO checking code and inputs for errors or bugs there is some
+# TODO checking "extreme" situations
+# FUCK THIS CANT WRITE IN HEBREW
