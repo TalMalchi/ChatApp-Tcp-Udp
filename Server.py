@@ -66,14 +66,15 @@ def client_main(client_sock: socket.socket, client_addr):
             elif cmd == "PMSG":
                 print(data)
                 sender = data[0:data.find("@")]
+                print((k,v) for (k,v) in active_sockets)
                 print(sender)
                 rest = data[data.find("@")+1:]
-                print(rest)
+                print("Rest" + rest)
                 sendto = rest[0:rest.find("@")]
-                print(sendto)
-                msg = rest[rest.find("@")+1:]
-                print(msg)
-                active_sockets[sendto].send(f"PMSG@{sender}@{msg}".encode('utf-8'))
+                print("Send to : " + sendto)
+                new_msg = rest[rest.find("@")+1:]
+                print("MSG " + new_msg)
+                active_sockets[sendto].send(f"PMSG@{sender}@{new_msg}".encode('utf-8'))
 
         except:
             print(f"{addr} Disconnected from server.\n")
