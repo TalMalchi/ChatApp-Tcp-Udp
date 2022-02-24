@@ -54,7 +54,6 @@ def client_main(client_sock: socket.socket, client_addr):
 
             elif cmd == "SHOWUSERS":
                 msg = "SHOWUSERS@"
-                print("Falling here\n")
                 msg += '\n'.join(c for c in active_sockets.keys())
                 client_sock.send(msg.encode('utf-8'))
 
@@ -65,8 +64,16 @@ def client_main(client_sock: socket.socket, client_addr):
                 broadcast(msg[1:])
 
             elif cmd == "PMSG":
-                name = msg[1]
-                active_sockets[name].send("PMSG@".join(m + "@" for m in msg[2:]).encode('utf-8'))
+                print(data)
+                sender = data[0:data.find("@")]
+                print(sender)
+                rest = data[data.find("@")+1:]
+                print(rest)
+                sendto = rest[0:rest.find("@")]
+                print(sendto)
+                msg = rest[rest.find("@")+1:]
+                print(msg)
+                active_sockets[sendto].send(f"PMSG@{sender}@{msg}".encode('utf-8'))
 
         except:
             print(f"{addr} Disconnected from server.\n")

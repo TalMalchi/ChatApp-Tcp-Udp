@@ -96,7 +96,7 @@ class GUI:
                     user_name = values["-USERS LIST-"][0]
                     self.window["in1"].update(user_name)
 
-            if event == "btn_send" :
+            if event == "btn_send":
                 if len(values["in2"]) > 0:
                     if len(values["in1"]) > 0:
                         sender = values["user_name"]
@@ -106,85 +106,82 @@ class GUI:
                     else:
                         self.sock.send(f"MSG@{sender}@{msg}".encode('utf-8'))
 
+    def update_login(self):
+        self.window["__Status__"].update("Online", text_color="green")
+        self.window["user_name"].update(disabled=True)
+        self.window["address"].update(disabled=True)
+        self.window["showFiles"].update(disabled=False)
+        self.window["-DOWNLOAD-"].update(disabled=False)
+        self.window["btn_send"].update(disabled=False)
+        self.window["in1"].update(disabled=False)
+        self.window["in2"].update(disabled=False)
+        self.window["in3"].update(disabled=False)
+        self.window["-USERS-"].update(disabled=False)
 
-def update_login(self):
-    self.window["__Status__"].update("Online", text_color="green")
-    self.window["user_name"].update(disabled=True)
-    self.window["address"].update(disabled=True)
-    self.window["showFiles"].update(disabled=False)
-    self.window["-DOWNLOAD-"].update(disabled=False)
-    self.window["btn_send"].update(disabled=False)
-    self.window["in1"].update(disabled=False)
-    self.window["in2"].update(disabled=False)
-    self.window["in3"].update(disabled=False)
-    self.window["-USERS-"].update(disabled=False)
-
-
-def set_layout(self):
-    layout = \
-        [
-            [self.gui.Button("login", size=(15,), pad=((0, 10), 0)),
-             self.gui.Text("name", size=(5,), pad=((0, 10), 0)),
-             self.gui.In("", (15,), pad=((0, 10), 0), key="user_name"),
-             self.gui.Text("address", pad=((0, 10), 0)),
-             self.gui.In("", size=(15,), pad=((0, 10), 0), key="address"),
-             self.gui.Text("status:", pad=((0, 10), 0)),
-             self.gui.Text("offline", text_color="red", font=('MS Sans Serif', 10, 'bold'), key="__Status__",
-                           pad=((0, 10), 0)),
-             self.gui.Button("Clear", 'right', key="clear", size=(15,), disabled=False, pad=((320, 0), 0))
-             ],
-
+    def set_layout(self):
+        layout = \
             [
-                self.gui.Button("Show Server Files", disabled=True, key="showFiles"),
-                self.gui.Button("Show Online Users", disabled=True, key="-USERS-", size=(15,), pad=(10, 0))
+                [self.gui.Button("login", size=(15,), pad=((0, 10), 0)),
+                 self.gui.Text("name", size=(5,), pad=((0, 10), 0)),
+                 self.gui.In("", (15,), pad=((0, 10), 0), key="user_name"),
+                 self.gui.Text("address", pad=((0, 10), 0)),
+                 self.gui.In("", size=(15,), pad=((0, 10), 0), key="address"),
+                 self.gui.Text("status:", pad=((0, 10), 0)),
+                 self.gui.Text("offline", text_color="red", font=('MS Sans Serif', 10, 'bold'), key="__Status__",
+                               pad=((0, 10), 0)),
+                 self.gui.Button("Clear", 'right', key="clear", size=(15,), disabled=False, pad=((320, 0), 0))
+                 ],
 
-            ],
+                [
+                    self.gui.Button("Show Server Files", disabled=True, key="showFiles"),
+                    self.gui.Button("Show Online Users", disabled=True, key="-USERS-", size=(15,), pad=(10, 0))
 
-            [
-                self.gui.Listbox(
-                    values=[], enable_events=True, size=(90, 30), key="-FILE LIST2-"
-                ),
-                self.gui.Listbox(
-                    values=[], enable_events=True, size=(40, 30), key="-USERS LIST-"
-                )
-            ],
+                ],
 
-            [
-                self.gui.Text("To (blank to all)", size=(25,), pad=((0, 15), 0)),
-                self.gui.Text("Message", pad=((0, 15), 0))
-            ],
+                [
+                    self.gui.Listbox(
+                        values=[], enable_events=True, size=(90, 30), key="-FILE LIST2-"
+                    ),
+                    self.gui.Listbox(
+                        values=[], enable_events=True, size=(40, 30), key="-USERS LIST-"
+                    )
+                ],
 
-            [
-                self.gui.Input(disabled=True, size=(25,), disabled_readonly_background_color="grey", key="in1"),
-                self.gui.Input(disabled=True, size=(100,), disabled_readonly_background_color="grey", key="in2")
-                , self.gui.Button("Send", disabled=True, size=(25,), key="btn_send")
-            ],
+                [
+                    self.gui.Text("To (blank to all)", size=(25,), pad=((0, 15), 0)),
+                    self.gui.Text("Message", pad=((0, 15), 0))
+                ],
 
-            [
-                self.gui.Text("Server File Name", size=(25,), pad=((0, 15), 0)),
-                self.gui.Text("Client File Name (save as..)", pad=((0, 15), 0))
-            ],
+                [
+                    self.gui.Input(disabled=True, size=(25,), disabled_readonly_background_color="grey", key="in1"),
+                    self.gui.Input(disabled=True, size=(100,), disabled_readonly_background_color="grey", key="in2")
+                    , self.gui.Button("Send", disabled=True, size=(25,), key="btn_send")
+                ],
 
-            [
-                self.gui.Input("", disabled=True, disabled_readonly_background_color="grey",
-                               size=(25,), key="in3"),
-                self.gui.Input("", size=(25,), key="in4"),
-                self.gui.Button("Download", disabled=True, size=(25,), key="-DOWNLOAD-")
+                [
+                    self.gui.Text("Server File Name", size=(25,), pad=((0, 15), 0)),
+                    self.gui.Text("Client File Name (save as..)", pad=((0, 15), 0))
+                ],
+
+                [
+                    self.gui.Input("", disabled=True, disabled_readonly_background_color="grey",
+                                   size=(25,), key="in3"),
+                    self.gui.Input("", size=(25,), key="in4"),
+                    self.gui.Button("Download", disabled=True, size=(25,), key="-DOWNLOAD-")
+                ]
+                ,
+                [
+                    self.gui.Text("Progress Bar"),
+                    self.gui.ProgressBar(100, size=(20, 10))
+                ]
             ]
-            ,
-            [
-                self.gui.Text("Progress Bar"),
-                self.gui.ProgressBar(100, size=(20, 10))
-            ]
-        ]
 
-    self.window = self.gui.Window("Launcher", layout, size=(1024, 768), grab_anywhere=True)
+        self.window = self.gui.Window("Launcher", layout, size=(1024, 768), grab_anywhere=True)
 
-
-def close(self):
-    self.user.client_sock.send("connection closed".encode())
-    self.user.client_sock.close()
-    exit()
+    def close(self):
+        self.user.client_sock.send("connection closed".encode())
+        self.user.client_sock.close()
+        exit()
 
 
 class read_trd(threading.Thread):
