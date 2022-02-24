@@ -61,9 +61,10 @@ class GUI:
                 self.sock.send("SHOWFILES@Give me all files in server".encode('utf-8'))
 
             if event == "-FILE LIST2-":
-                file_name = values["-FILE LIST2-"][0]
-                self.window["in3"].update(file_name)
-                self.window["in4"].update(file_name)
+                if len(values["-FILE LIST2-"]) > 0:
+                    file_name = values["-FILE LIST2-"][0]
+                    self.window["in3"].update(file_name)
+                    self.window["in4"].update(file_name)
 
             if event == "-DOWNLOAD-":
                 file_name = self.window["in3"].get()
@@ -203,8 +204,9 @@ class read_trd(threading.Thread):
 
                 elif cmd == "SHOWUSERS":
                     print("Got Users Successfully.\n")
-                    users = [x for x in data.split('\n')]
-                    self.gui.window["-USERS LIST-"].update(values=data, visible=True)
+                    users = [x.split("@")[0] for x in data.split('\n')]
+                    print(users)
+                    self.gui.window["-USERS LIST-"].update(values=users, visible=True)
                     print(data)
 
                 elif cmd == "DOWNLOAD":
