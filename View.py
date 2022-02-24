@@ -265,8 +265,7 @@ if __name__ == '__main__':
     gui = GUI()
     gui.welcome_screen()
 
-# TODO Checking about cc algorithm setsockopt tcp
-# TODO Addind UDP sending file threads/sockets
-# TODO checking code and inputs for errors or bugs there is some
-# TODO checking "extreme" situations
-# FUCK THIS CANT WRITE IN HEBREW
+# TODO צריך לבדוק לגבי אלגוריתם CC 1.
+# TODO להוסיף טרדים לסוקט UDP לשליחת קבצים
+# TODO לבדוק קוד ואינפוטים יש טעויות
+# TODO בדיקות קצה
