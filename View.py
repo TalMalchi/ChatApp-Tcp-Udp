@@ -94,12 +94,21 @@ class GUI:
                 data = self.sock.send("SHOWUSERS@".encode('utf-8'))
 
             if event == "-USERS LIST-":
+                if len(values["-USERS LIST-"]) > 0 :
+                    user_name = values["-USERS LIST-"][0]
+                    self.window["in1"].update(user_name)
 
-                user_name = values["-USERS LIST-"][0]
-                self.window["in1"].update(user_name)
+            if event == "btn_send":
+                if len(values["in1"]) > 0:
+                    self.sock.send(f"PMSG@{values[in1]}@{values[in2]}".encode('utf-8'))
+                else:
+                    self.sock.send(f"MSG@{values[in2]}".encode('utf-8'))
+
 
     def update_login(self):
         self.window["__Status__"].update("Online", text_color="green")
+        self.window["user_name"].update(disabled=True)
+        self.window["address"].update(disabled=True)
         self.window["showFiles"].update(disabled=False)
         self.window["-DOWNLOAD-"].update(disabled=False)
         self.window["btn_send"].update(disabled=False)
