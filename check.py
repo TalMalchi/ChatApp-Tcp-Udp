@@ -1,8 +1,8 @@
 import socket
-import threading
+from threading import Thread
 import os
 
-serverAddr = ("10.0.0.15", 55000)
+serverAddr = ("10.0.0.5", 55000)
 SIZE = 1024
 messageList: list = []
 
@@ -10,79 +10,89 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(serverAddr)
 
 
-def conn_read():
-    while True:
-        try:
-            msg = sock.recv(SIZE).decode('utf-8')
-            cmd = msg[:msg.find("@")]
-            data = msg[msg.find("@") + 1:]
+class connRead(Thread):
+    def __init__(self):
+        Thread.__init__(self)
 
-            if cmd == "LOGIN":
-                print(data)
-                messageList.append("LOGIN")
-                print(messageList)
+        def run(self):
+            while True:
+                try:
+                    msg = sock.recv(SIZE).decode('utf-8')
+                    cmd = msg[:msg.find("@")]
+                    data = msg[msg.find("@") + 1:]
+                    if msg or data or cmd is True:
+                        print(f"{msg},{data},{cmd}\n")
 
-            elif cmd == "LOGGEDIN":
-                print(data)
+                    if cmd == "LOGIN":
+                        print(data)
+                        messageList.append("LOGIN")
+                        print(messageList)
 
-            elif cmd == "SHOWFILES":
-                print("Got Files Successfully.\n")
-                print(data)
+                    elif cmd == "LOGGEDIN":
+                        print(data)
 
-            elif cmd == "SHOWUSERS":
-                print("Got Users Successfully.\n")
-                print(data)
+                    elif cmd == "SHOWFILES":
+                        print("Got Files Successfully.\n")
+                        print(data)
 
-            elif cmd == "DOWNLOAD":
-                pass
+                    elif cmd == "SHOWUSERS":
+                        print("Got Users Successfully.\n")
+                        print(data)
 
-            elif cmd == "MSG":
-                print(data)
-            elif cmd == "PMSG":
-                pass
+                    elif cmd == "DOWNLOAD":
+                        pass
 
-        except os.error as e:
-            print("An Error Occured please connect again.\n")
-            sock.close()
-            print(e)
-            exit(-1)
+                    elif cmd == "MSG":
+                        print(data)
+                    elif cmd == "PMSG":
+                        pass
+
+                except os.error as e:
+                    print("An Error Occured please connect again.\n")
+                    sock.close()
+                    print(e)
+                    exit(-1)
 
 
-def conn_write():
-    print("Write Conn working\n")
-    while True:
-        if messageList.__len__() > 0:
-            cmd = messageList.pop(0)
+class connWrite(Thread):
+    def __init__(self):
+        Thread.__init__(self)
 
-            if cmd == "LOGIN":
-                a = input()
-                print(a)
-                msg = f"LOGIN@{input()}".encode('utf-8')
-                sock.send(msg)
+        def run(self):
+            print("Write Conn working\n")
+            while True:
+                if messageList.__len__() > 0:
+                    cmd = messageList.pop(0)
 
-            elif cmd == "LOGGEDIN":
-                pass
+                    if cmd == "LOGIN":
+                        a = input()
+                        print(a)
+                        msg = f"LOGIN@{input()}".encode('utf-8')
+                        sock.send(msg)
 
-            elif cmd == "SHOWFILES":
-                print("Got Files Successfully.\n")
+                    elif cmd == "LOGGEDIN":
+                        pass
 
-            elif cmd == "SHOWUSERS":
-                print("Got Users Successfully.\n")
+                    elif cmd == "SHOWFILES":
+                        print("Got Files Successfully.\n")
 
-            elif cmd == "DOWNLOAD":
-                pass
+                    elif cmd == "SHOWUSERS":
+                        print("Got Users Successfully.\n")
 
-            elif cmd == "MSG":
-                pass
+                    elif cmd == "DOWNLOAD":
+                        pass
 
-            elif cmd == "PMSG":
-                pass
+                    elif cmd == "MSG":
+                        pass
+
+                    elif cmd == "PMSG":
+                        pass
 
 
 if __name__ == '__main__':
-    read_trd = threading.Thread(target=conn_read())
+    read_trd = connRead()
     read_trd.start()
     print("Got \n")
-    write_trd = threading.Thread(target=conn_write())
+    write_trd = connWrite()
     write_trd.start()
     print("Tread should work\n")

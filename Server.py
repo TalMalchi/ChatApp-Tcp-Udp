@@ -33,7 +33,6 @@ def client_main(client_sock: socket.socket, client_addr):
             msg = client_sock.recv(SIZE).decode('utf-8')
             cmd = msg[:msg.find("@")]
             data = msg[msg.find("@")+1:]
-            print(msg,cmd,data)
 
             if cmd == "DISCONNECT":
                 client_sock.close()
@@ -70,6 +69,7 @@ def client_main(client_sock: socket.socket, client_addr):
 
         except:
             print(f"{addr} Disconnected from server.\n")
+            break
 
 
 if __name__ == '__main__':
