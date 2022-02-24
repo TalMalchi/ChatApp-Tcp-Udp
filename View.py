@@ -67,32 +67,33 @@ class GUI:
 
             if event == "-DOWNLOAD-":
                 file_name = self.window["in3"].get()
-                self.user.client_sock.send(f"file,{file_name}".encode())
-                ans = self.user.client_sock.recv(1024).decode()
+                self.sock.send(f"DOWNLOAD@{file_name}".encode('utf-8'))
 
-                if ans == "OK":
-                    self.gui.popup("File Found Starting Download")
-                    with open(self.window["in4"].get(), 'wb') as file:
-                        print("File Opened")
-                        data = 1
-                        while True:
-                            data = self.user.client_sock.recv(1024)
-                            if data.endswith("-@end@-".encode()):
-                                file.write(data[:-7])
-                                file.flush()
-                                file.close()
-                                print("File Closed")
-                                break
-
-                            file.write(data)
-
-                    print("File Written")
+                # ans = self.sock.recv(1024).decode()
+                #
+                # if ans == "OK":
+                #     self.gui.popup("File Found Starting Download")
+                #     with open(self.window["in4"].get(), 'wb') as file:
+                #         print("File Opened")
+                #         data = 1
+                #         while True:
+                #             data = self.user.client_sock.recv(1024)
+                #             if data.endswith("-@end@-".encode()):
+                #                 file.write(data[:-7])
+                #                 file.flush()
+                #                 file.close()
+                #                 print("File Closed")
+                #                 break
+                #
+                #             file.write(data)
+                #
+                #     print("File Written")
 
             if event == "-USERS-":
-                data = self.user.ask_users_list()
-                self.window["-USERS LIST-"].update(values=data, visible=True)
+                data = self.sock.send("SHOWUSERS@".encode('utf-8'))
 
             if event == "-USERS LIST-":
+
                 user_name = values["-USERS LIST-"][0]
                 self.window["in1"].update(user_name)
 
@@ -201,6 +202,8 @@ class read_trd(threading.Thread):
 
                 elif cmd == "SHOWUSERS":
                     print("Got Users Successfully.\n")
+                    users = [x for x in data.split('\n')]
+                    self.gui.window["-USERS LIST-"].update(values=data, visible=True)
                     print(data)
 
                 elif cmd == "DOWNLOAD":
