@@ -3,7 +3,7 @@ import socket
 import threading
 
 from PySimpleGUI import *
-
+ChatSize = 20
 serverAddr = ("10.0.0.5", 55000)
 
 
@@ -14,6 +14,7 @@ class GUI:
         self.window: PySimpleGUI.Window = None
         self.window_length = 1024
         self.window_height = 768
+        self.message_queue:list =[]
 
     def welcome_screen(self):
         welcome = [
@@ -98,10 +99,10 @@ class GUI:
 
             if event == "btn_send":
                 if len(values["in2"]) > 0:
+                    sender = values["user_name"]
+                    msg = values["in2"]
                     if len(values["in1"]) > 0:
-                        sender = values["user_name"]
                         send_to = values["in1"]
-                        msg = values["in2"]
                         self.sock.send(f"PMSG@{sender}@{send_to}@{msg}".encode('utf-8'))
                     else:
                         self.sock.send(f"MSG@{sender}@{msg}".encode('utf-8'))
@@ -137,14 +138,22 @@ class GUI:
                     self.gui.Button("Show Online Users", disabled=True, key="-USERS-", size=(15,), pad=(10, 0))
 
                 ],
-
+                [
+                    self.gui.Text("Chat"),
+                    self.gui.Text("Server Files", pad=((550,0),0)),
+                    self.gui.Text("Online",pad = ((235,0),0))
+                ]
+                ,
                 [
                     self.gui.Listbox(
-                        values=[], enable_events=True, size=(90, 30), key="-FILE LIST2-"
+                        values=[], enable_events=True, size=(80, 30), key="-Chat-",
                     ),
                     self.gui.Listbox(
-                        values=[], enable_events=True, size=(40, 30), key="-USERS LIST-"
+                        values=[], enable_events=True, size=(40, 30), key="-FILE LIST2-"
+                    ),  self.gui.Listbox(
+                        values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
                     )
+
                 ],
 
                 [
@@ -179,8 +188,8 @@ class GUI:
         self.window = self.gui.Window("Launcher", layout, size=(1024, 768), grab_anywhere=True)
 
     def close(self):
-        self.user.client_sock.send("connection closed".encode())
-        self.user.client_sock.close()
+        self.sock.send("DISCONNECT@LOGGEDOUT".encode('utf-8'))
+        self.sock.close()
         exit()
 
 
@@ -222,9 +231,27 @@ class read_trd(threading.Thread):
                     pass
 
                 elif cmd == "MSG":
-                    print(data)
+                    name = data[:data.find("@")]
+                    chat_msg = data[data.find("@") + 1:]
+                    if self.gui.message_queue.__len__() >= ChatSize:
+                        self.gui.message_queue.pop(0)
+                    self.gui.message_queue.append(f"{name} : {chat_msg}")
+                    self.gui.window["-Chat-"].update(values=self.gui.message_queue)
                 elif cmd == "PMSG":
-                    pass
+                    name = data[:data.find("@")]
+                    chat_msg = data[data.find("@")+1:]
+                    if self.gui.message_queue.__len__() >= ChatSize:
+                        self.gui.message_queue.pop(0)
+                    self.gui.message_queue.append(f"(Private) {name} : {chat_msg}")
+                    self.gui.window["-Chat-"].update(values=self.gui.message_queue)
+
+                elif cmd == "PMSG_S":
+                    name = data[:data.find("@")]
+                    chat_msg = data[data.find("@") + 1:]
+                    if self.gui.message_queue.__len__() >= ChatSize:
+                        self.gui.message_queue.pop(0)
+                    self.gui.message_queue.append(f"(Private to) {name} : {chat_msg}")
+                    self.gui.window["-Chat-"].update(values=self.gui.message_queue)
 
             except os.error as e:
                 print("An Error Occured please connect again.\n")

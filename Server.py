@@ -10,7 +10,7 @@ active_sockets = {}
 
 
 def remove_socket(cl):
-    for name, sock in active_sockets:
+    for name, sock in active_sockets.items():
         if cl is sock:
             broadcast(f"{name} left the chat.\n")
             del active_sockets[name]
@@ -35,12 +35,12 @@ def client_main(client_sock: socket.socket, client_addr):
             data = msg[msg.find("@")+1:]
 
             if cmd == "DISCONNECT":
-                client_sock.close()
                 remove_socket(client_sock)
+                client_sock.close()
                 break
 
             elif cmd == "LOGIN":
-                name = data
+                name = data.split("@")[0]
                 if name in active_sockets.keys():
                     client_sock.send("Error@User name already exists in the system\n".encode('utf-8'))
                 else:
@@ -61,23 +61,24 @@ def client_main(client_sock: socket.socket, client_addr):
                 pass
 
             elif cmd == "MSG":
-                broadcast(msg[1:])
+                sender = data[0:data.find("@")]
+                rest = data[data.find("@")+1:]
+                broadcast(f"MSG@{sender}@{rest}")
 
             elif cmd == "PMSG":
-                print(data)
                 sender = data[0:data.find("@")]
-                print((k,v) for (k,v) in active_sockets)
-                print(sender)
                 rest = data[data.find("@")+1:]
-                print("Rest" + rest)
                 sendto = rest[0:rest.find("@")]
-                print("Send to : " + sendto)
                 new_msg = rest[rest.find("@")+1:]
-                print("MSG " + new_msg)
                 active_sockets[sendto].send(f"PMSG@{sender}@{new_msg}".encode('utf-8'))
+                active_sockets[sender].send(f"PMSG_S@{sendto}@{new_msg}".encode('utf-8'))
+
 
         except:
             print(f"{addr} Disconnected from server.\n")
+            for k,v in active_sockets.items():
+                if v is client_sock:
+                    del active_sockets[k]
             break
 
 
