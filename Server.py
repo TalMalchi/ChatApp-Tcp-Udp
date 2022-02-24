@@ -44,16 +44,17 @@ def client_main(client_sock: socket.socket, client_addr):
                 if name in active_sockets.keys():
                     client_sock.send("Error@User name already exists in the system\n".encode('utf-8'))
                 else:
-                    client_sock.send("OK@Logged In\n".encode('utf-8'))
+                    client_sock.send("LOGGEDIN@Logged In Succesfully\n".encode('utf-8'))
                     active_sockets[name] = client_sock
 
             elif cmd == "SHOWFILES":
                 msg = "SHOWFILES@"
-                msg += '\n'.join(file for file in os.listdir(""))
+                msg += '\n'.join(file for file in os.listdir("files"))
                 client_sock.send(msg.encode('utf-8'))
 
             elif cmd == "SHOWUSERS":
                 msg = "SHOWUSERS@"
+                print("Falling here\n")
                 msg += '\n'.join(c for c in active_sockets.keys())
                 client_sock.send(msg.encode('utf-8'))
 
