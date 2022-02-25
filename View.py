@@ -5,7 +5,7 @@ import threading
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("10.0.0.5", 55000)
+serverAddr = ("10.0.0.21", 55000)
 
 
 class GUI:
@@ -17,6 +17,7 @@ class GUI:
         self.window_height = 768
         self.message_queue: list = []
 
+    # the initial screen before the connection to the server is established
     def welcome_screen(self):
         welcome = [
             [
@@ -26,7 +27,7 @@ class GUI:
         ]
 
         self.window = self.gui.Window("Launcher", welcome, grab_anywhere=True)
-
+        # when the connection to the server is established "helloScreen" opens
         while True:
             event, values = self.window.read()
             if event == "OK" or event == self.gui.WINDOW_CLOSED:
@@ -40,9 +41,10 @@ class GUI:
             else:
                 self.gui.popup_error("Couldnt connect to server, try again.")
 
+    # the screen opens when new client connects to the server, and can start using the chat
     def helloScreen(self):
         self.set_layout()
-
+        # all the commands the client can choose from the screen.
         while True:
             event, values = self.window.read()
             if event == "OK" or event == self.gui.WINDOW_CLOSED:
@@ -50,22 +52,27 @@ class GUI:
                 break
 
             if event == "login":
+                # save the user name and the address of the client
                 user_name = self.window["user_name"].get()
                 address = self.window["address"].get()
                 if not user_name or not address:
                     self.gui.popup_error("Please enter valid username and address")
                 else:
+                    # send all the details to the server
                     self.sock.send(f"LOGIN@{user_name}@{address}".encode('utf-8'))
 
+            # show all the possible files in the server
             if event == "showFiles":
                 self.sock.send("SHOWFILES@Give me all files in server".encode('utf-8'))
 
+            # choose a specific file from the list
             if event == "-FILE LIST2-":
                 if len(values["-FILE LIST2-"]) > 0:
                     file_name = values["-FILE LIST2-"][0]
                     self.window["in3"].update(file_name)
                     self.window["in4"].update(file_name)
 
+            # download a specific file from the list
             if event == "-DOWNLOAD-":
                 file_name = self.window["in3"].get()
                 self.sock.send(f"DOWNLOAD@{file_name}".encode('utf-8'))
@@ -90,6 +97,7 @@ class GUI:
                 #
                 #     print("File Written")
 
+            # show all logges in users
             if event == "-USERS-":
                 self.sock.send("SHOWUSERS@".encode('utf-8'))
                 self.sock.setsockopt()
@@ -98,16 +106,20 @@ class GUI:
                     user_name = values["-USERS LIST-"][0]
                     self.window["in1"].update(user_name)
 
+            # send a message
             if event == "btn_send":
                 if len(values["in2"]) > 0:
                     sender = values["user_name"]
                     msg = values["in2"]
                     if len(values["in1"]) > 0:
                         send_to = values["in1"]
+                        # send a private message to another user
                         self.sock.send(f"PMSG@{sender}@{send_to}@{msg}".encode('utf-8'))
                     else:
+                        # send a message to all the activities users
                         self.sock.send(f"MSG@{sender}@{msg}".encode('utf-8'))
 
+    # update the gui when new client logged in successfully
     def update_login(self):
         self.window["__Status__"].update("Online", text_color="green")
         self.window["user_name"].update(disabled=True)
@@ -120,6 +132,7 @@ class GUI:
         self.window["in3"].update(disabled=False)
         self.window["-USERS-"].update(disabled=False)
 
+    # "helloScreen" - opens when new client connects to the server
     def set_layout(self):
         layout = \
             [
@@ -188,12 +201,13 @@ class GUI:
 
         self.window = self.gui.Window("Launcher", layout, size=(1024, 768), grab_anywhere=True)
 
+    # close the chat when client logged out or disconnected
     def close(self):
         self.sock.send("DISCONNECT@LOGGEDOUT".encode('utf-8'))
         self.sock.close()
         exit()
 
-
+# read_thread class. Gets all the "answers" from the server according to client's commands
 class read_trd(threading.Thread):
     def __init__(self, Gui: GUI):
         threading.Thread.__init__(self)
@@ -203,6 +217,7 @@ class read_trd(threading.Thread):
     def run(self):
         while True:
             try:
+                # receive the server's response. split it to command and data
                 msg = self.sock.recv(1024).decode('utf-8')
                 cmd = msg[:msg.find("@")]
                 data = msg[msg.find("@") + 1:]
@@ -212,15 +227,18 @@ class read_trd(threading.Thread):
                 if cmd == "LOGIN":
                     pass
 
+                # when new client has logged in, change the gui
                 elif cmd == "LOGGEDIN":
                     self.gui.update_login()
 
+                # show all the files we get from the server in the gui
                 elif cmd == "SHOWFILES":
                     print(data)
                     files = [x for x in data.split('\n')]
                     print(files)
                     self.gui.window["-FILE LIST2-"].update(values=files)
 
+                # show all the users we get from the server in the gui
                 elif cmd == "SHOWUSERS":
                     print("Got Users Successfully.\n")
                     users = [x.split("@")[0] for x in data.split('\n')]
@@ -228,9 +246,11 @@ class read_trd(threading.Thread):
                     self.gui.window["-USERS LIST-"].update(values=users, visible=True)
                     print(data)
 
+                # download a file selected by the client
                 elif cmd == "DOWNLOAD":
                     pass
 
+                # show a public message in the chat, sent from one client to all connected users
                 elif cmd == "MSG":
                     name = data[:data.find("@")]
                     chat_msg = data[data.find("@") + 1:]
@@ -238,6 +258,8 @@ class read_trd(threading.Thread):
                         self.gui.message_queue.pop(0)
                     self.gui.message_queue.append(f"{name} : {chat_msg}")
                     self.gui.window["-Chat-"].update(values=self.gui.message_queue)
+
+                # show a private message in the chat, sent from one client to another
                 elif cmd == "PMSG":
                     name = data[:data.find("@")]
                     chat_msg = data[data.find("@") + 1:]
