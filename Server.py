@@ -12,7 +12,7 @@ active_sockets = {}
 
 class handle_udp(Thread):
     def __init__(self, address, file_name):
-        Thread.__init__()
+        Thread.__init__(self)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client_udp = (address[0], address[1])
         self.window_size = 8
@@ -20,17 +20,19 @@ class handle_udp(Thread):
         self.wait_time = 0.5
         self.filename = file_name
 
-    def run(self, ip):
+    def run(self):
         packets = []
         num = 0
         # open the file with binary
+        print("GOT HERE")
         with open(self.filename, 'rb') as file:
             while True:
                 # read chunck of 1020 bytes from file, to build packets with 1024 bytes (+4 bytes- ack's num)
                 file_contents = file.read(1020)
+                print(file_contents)
                 while file_contents:
                     # init packets array
-                    packets.append(num.to_bytes(4, "little", True) + file_contents)
+                    packets.append(num.to_bytes(4, byteorder="little", signed=True) + file_contents)
                     num += 1
                     # read the next file bytes
                     file_contents = file.read(1020)
@@ -49,7 +51,7 @@ class handle_udp(Thread):
                         next_pack += 1
                     self.timer_start()
                     while self.timer_running() and not self.timer_timeout():
-                        data = self.udp_sock.recvfrom(1024) # data= (msg, (ip, port))
+                        data = self.udp_sock.recvfrom(1024)  # data= (msg, (ip, port))
                         if data:
                             ack = data[0].decode()
                             if int(ack) >= base:
@@ -61,11 +63,11 @@ class handle_udp(Thread):
                                 self.stop_timer()
                     if self.timer_timeout():
                         self.stop_timer()
-                        next_pack= base
+                        next_pack = base
 
                     else:
                         print("shifting window")
-                        self.window_size= self.set_window(pack_len, base)
+                        self.window_size = self.set_window(pack_len, base)
                 break
 
     def timer_start(self):
@@ -87,6 +89,7 @@ class handle_udp(Thread):
     def stop_timer(self):
         if self.start_time != -1:
             self.start_time = -1
+
 
 # remove a user when he disconnect
 def remove_socket(cl):
