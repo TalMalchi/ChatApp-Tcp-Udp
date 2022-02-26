@@ -14,7 +14,7 @@ def remove_socket(cl):
     for name, sock in active_sockets.items():
         if cl is sock:
             # update all the users that this client has left
-            broadcast(f"{name} left the chat.\n")
+            broadcast(f"Notice@{name} left the chat.\n")
             # remove the client from active_sockets dict
             del active_sockets[name]
 

@@ -5,7 +5,7 @@ import threading
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("10.0.0.21", 55000)
+serverAddr = ("10.0.0.5", 55000)
 
 
 class GUI:
@@ -100,7 +100,6 @@ class GUI:
             # show all logges in users
             if event == "-USERS-":
                 self.sock.send("SHOWUSERS@".encode('utf-8'))
-                self.sock.setsockopt()
             if event == "-USERS LIST-":
                 if len(values["-USERS LIST-"]) > 0:
                     user_name = values["-USERS LIST-"][0]
@@ -165,9 +164,8 @@ class GUI:
                     self.gui.Listbox(
                         values=[], enable_events=True, size=(40, 30), key="-FILE LIST2-"
                     ), self.gui.Listbox(
-                    values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
-                )
-
+                        values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
+                    )
                 ],
 
                 [
@@ -206,6 +204,7 @@ class GUI:
         self.sock.send("DISCONNECT@LOGGEDOUT".encode('utf-8'))
         self.sock.close()
         exit()
+
 
 # read_thread class. Gets all the "answers" from the server according to client's commands
 class read_trd(threading.Thread):
@@ -254,9 +253,11 @@ class read_trd(threading.Thread):
                 elif cmd == "MSG":
                     name = data[:data.find("@")]
                     chat_msg = data[data.find("@") + 1:]
+                    new_msg = "".join([chat_msg[i:i + 30] + "\n" for i in range(0, len(chat_msg), 30)])
+                    print(new_msg)
                     if self.gui.message_queue.__len__() >= ChatSize:
                         self.gui.message_queue.pop(0)
-                    self.gui.message_queue.append(f"{name} : {chat_msg}")
+                    self.gui.message_queue.append(f"{name} : {new_msg}")
                     self.gui.window["-Chat-"].update(values=self.gui.message_queue)
 
                 # show a private message in the chat, sent from one client to another
@@ -274,6 +275,12 @@ class read_trd(threading.Thread):
                     if self.gui.message_queue.__len__() >= ChatSize:
                         self.gui.message_queue.pop(0)
                     self.gui.message_queue.append(f"(Private to) {name} : {chat_msg}")
+                    self.gui.window["-Chat-"].update(values=self.gui.message_queue)
+
+                elif cmd == "Notice":
+                    if self.gui.message_queue.__len__() >= ChatSize:
+                        self.gui.message_queue.pop(0)
+                    self.gui.message_queue.append(data)
                     self.gui.window["-Chat-"].update(values=self.gui.message_queue)
 
             except os.error as e:
