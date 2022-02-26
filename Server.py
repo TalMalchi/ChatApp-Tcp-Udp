@@ -1,6 +1,7 @@
 import os
 import socket
-import threading
+from threading import Thread
+import time
 
 SERVERADDR = ("", 55000)
 SIZE = 1024
@@ -8,6 +9,84 @@ SIZE = 1024
 # clients = []
 active_sockets = {}
 
+
+class handle_udp(Thread):
+    def __init__(self, address, file_name):
+        Thread.__init__()
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.client_udp = (address[0], address[1])
+        self.window_size = 8
+        self.start_time = -1
+        self.wait_time = 0.5
+        self.filename = file_name
+
+    def run(self, ip):
+        packets = []
+        num = 0
+        # open the file with binary
+        with open(self.filename, 'rb') as file:
+            while True:
+                # read chunck of 1020 bytes from file, to build packets with 1024 bytes (+4 bytes- ack's num)
+                file_contents = file.read(1020)
+                while file_contents:
+                    # init packets array
+                    packets.append(num.to_bytes(4, "little", True) + file_contents)
+                    num += 1
+                    # read the next file bytes
+                    file_contents = file.read(1020)
+                file.close()
+
+                pack_len = len(packets)
+                print(pack_len)
+                next_pack = 0
+                base = 0
+                window = self.set_window(pack_len, base)
+
+                while base < pack_len:
+                    while next_pack < base + window and next_pack < pack_len:
+                        print(next_pack)
+                        self.udp_sock.sendto(packets[next_pack], self.client_udp)
+                        next_pack += 1
+                    self.timer_start()
+                    while self.timer_running() and not self.timer_timeout():
+                        data = self.udp_sock.recvfrom(1024) # data= (msg, (ip, port))
+                        if data:
+                            ack = data[0].decode()
+                            if int(ack) >= base:
+                                base = int(ack) + 1
+                                self.stop_timer()
+                            else:
+                                base = int(ack)
+                                next_pack = base
+                                self.stop_timer()
+                    if self.timer_timeout():
+                        self.stop_timer()
+                        next_pack= base
+
+                    else:
+                        print("shifting window")
+                        self.window_size= self.set_window(pack_len, base)
+                break
+
+    def timer_start(self):
+        if self.start_time == -1:
+            self.start_time = time.time()
+
+    def set_window(self, num_packets, base):
+        return min(self.window_size, num_packets - base)
+
+    def timer_running(self):
+        return self.start_time != -1
+
+    def timer_timeout(self):
+        if not self.timer_running():
+            return False
+        else:
+            return time.time() - self.start_time >= self.wait_time
+
+    def stop_timer(self):
+        if self.start_time != -1:
+            self.start_time = -1
 
 # remove a user when he disconnect
 def remove_socket(cl):
@@ -27,7 +106,6 @@ def broadcast(msg):
 
 
 def client_main(client_sock: socket.socket, client_addr):
-
     global active_sockets
     # new client logged in successfully
     print(f"New Connection {client_addr} connected successfully.\n")
@@ -36,7 +114,6 @@ def client_main(client_sock: socket.socket, client_addr):
     # all possible server's responses to commands that a client can execute
     # LOGIN@Itay
     while True:
-        print(active_sockets.keys())
         try:
             msg = client_sock.recv(SIZE).decode('utf-8')
             cmd = msg[:msg.find("@")]
@@ -70,7 +147,15 @@ def client_main(client_sock: socket.socket, client_addr):
 
             # download a file selected by the client
             elif cmd == "DOWNLOAD":
-                pass
+                data = "files/" + data
+                if os.path.isfile(data):
+                    print("file exist")
+                    udp_conn = handle_udp(client_sock.getpeername(), data)
+                    udp_conn.start()
+                    # file_trd = threading.Thread(target=handle_file, args=(data, client_sock.getpeername()[0]))
+                    # file_trd.start()
+
+
             # send a public message to all activities users using "broadcast" function
             elif cmd == "MSG":
                 sender = data[0:data.find("@")]
@@ -92,6 +177,7 @@ def client_main(client_sock: socket.socket, client_addr):
             for k, v in active_sockets.items():
                 if v is client_sock:
                     del active_sockets[k]
+                    break
             break
 
 
@@ -106,5 +192,5 @@ if __name__ == '__main__':
     while True:
         # server thread
         client, addr = server.accept()
-        thread = threading.Thread(target=client_main, args=(client, addr))
+        thread = Thread(target=client_main, args=(client, addr))
         thread.start()

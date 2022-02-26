@@ -1,7 +1,6 @@
 import os
 import socket
-import threading
-
+from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
@@ -75,7 +74,10 @@ class GUI:
             # download a specific file from the list
             if event == "-DOWNLOAD-":
                 file_name = self.window["in3"].get()
+                new_file_name = self.window["in4"].get()
                 self.sock.send(f"DOWNLOAD@{file_name}".encode('utf-8'))
+                udp_trd = handle_udp_client(new_file_name)
+                udp_trd.start()
 
                 # ans = self.sock.recv(1024).decode()
                 #
@@ -100,6 +102,7 @@ class GUI:
             # show all logges in users
             if event == "-USERS-":
                 self.sock.send("SHOWUSERS@".encode('utf-8'))
+
             if event == "-USERS LIST-":
                 if len(values["-USERS LIST-"]) > 0:
                     user_name = values["-USERS LIST-"][0]
@@ -128,7 +131,7 @@ class GUI:
         self.window["btn_send"].update(disabled=False)
         self.window["in1"].update(disabled=False)
         self.window["in2"].update(disabled=False)
-        self.window["in3"].update(disabled=False)
+        self.window["in3"].update(disabled=True)
         self.window["-USERS-"].update(disabled=False)
 
     # "helloScreen" - opens when new client connects to the server
@@ -164,8 +167,8 @@ class GUI:
                     self.gui.Listbox(
                         values=[], enable_events=True, size=(40, 30), key="-FILE LIST2-"
                     ), self.gui.Listbox(
-                        values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
-                    )
+                    values=[], enable_events=True, size=(20, 30), key="-USERS LIST-"
+                )
                 ],
 
                 [
@@ -205,11 +208,101 @@ class GUI:
         self.sock.close()
         exit()
 
+class handle_udp_client(Thread):
+    def __init__(self , filename):
+        Thread.__init__(self)
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_sock.bind(("", 55015))
+        self.filename = filename
+
+    def run(self):
+        self.udp_sock.setblocking(0)
+        begin = time.time()
+        timeout = 2
+        expected = 0
+        packets = []
+        while True:
+            print('in while loop')
+            # wait if you have no data
+            if time.time() - begin > timeout:
+                break
+            # recieve something
+            try:
+                print("inside try")
+                packet = self.udp_sock.recv(1024)
+                if packet:
+                    num, data = self.extract(packet)
+                    print("Got packet ", num)
+
+                    # Send acknlowedgement to the sender
+                    if num == expected:
+                        print("Sending acknlowedgement ", expected)
+                        self.send_filename(str(expected))
+                        expected += 1
+                        packets.append((num, data))
+
+                    else:
+                        print("Sending acknlowedgement ", (expected - 1))
+                        self.send_filename(str(expected - 1))
+
+                    begin = time.time()
+
+                else:
+                    time.sleep(0.01)
+
+            except socket.error as err:
+                print("Excepetion happend")
+                pass
+
+            # sort packets, handle reordering
+        sorted(packets, key=lambda x: x[0])
+
+        packets = self.handle_duplicates(packets)
+
+        with open(self.filename, 'wb') as f:
+            print(packets ,packets.__len__)
+            print('File opened')
+            for p in packets:
+                print(p)
+                data = p[1]
+                f.write(data)
+
+        f.close()
+        self.end_connection()
+
+
+    def handle_duplicates(self, packets):
+        i = 0
+        while i < len(packets) - 1:
+            if packets[i][0] == packets[i + 1][0]:
+                del packets[i + 1]
+            else:
+                i += 1
+        return packets
+
+    def send_filename(self, filename):
+        return self.udp_sock.sendto(filename.encode(), (self.host, self.port))
+
+    def end_connection(self):
+        self.udp_sock.close()
+
+    def make_packet(self, acknum, data=b''):
+        ackbytes = acknum.to_bytes(4, byteorder='little', signed=True)
+        return ackbytes + data
+
+    def extract(self, packet):
+        num = int.from_bytes(packet[0:4], byteorder='little', signed=True)
+        return num, packet[4:]
+
+
+
+
+
 
 # read_thread class. Gets all the "answers" from the server according to client's commands
-class read_trd(threading.Thread):
+class read_trd(Thread):
     def __init__(self, Gui: GUI):
-        threading.Thread.__init__(self)
+        Thread.__init__(self)
         self.gui = Gui
         self.sock = Gui.sock
 

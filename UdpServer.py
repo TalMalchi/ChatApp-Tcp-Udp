@@ -5,8 +5,8 @@ import asyncio
 import http3
 from aioquic.h3 import connection
 if __name__ == '__main__':
-    socket = socket(AF_INET, SOCK_DGRAM)
-    socket.bind(("",443))
-
+    sock = socket(AF_INET, SOCK_DGRAM)
+    while True:
+        sock.sendto(b"This is msg", ("10.0.0.19", 55015))
 
 
