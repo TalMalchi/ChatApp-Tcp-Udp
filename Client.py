@@ -4,7 +4,7 @@ from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("10.0.0.5", 55000)
+serverAddr = ("10.0.2.13", 55000)
 
 
 class GUI:
@@ -208,28 +208,29 @@ class GUI:
         self.sock.close()
         exit()
 
+
 class handle_udp_client(Thread):
-    def __init__(self , filename):
+    def __init__(self, filename):
         Thread.__init__(self)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_sock.bind(("", 55015))
+        self.udp_server = None
         self.filename = filename
 
     def run(self):
+        self.udp_sock.bind(("",55015))
         self.udp_sock.setblocking(0)
         begin = time.time()
         timeout = 2
         expected = 0
         packets = []
         while True:
-            print('in while loop')
             # wait if you have no data
             if time.time() - begin > timeout:
                 break
             # recieve something
             try:
-                print("inside try")
-                packet = self.udp_sock.recv(1024)
+                packet, self.udp_server = self.udp_sock.recvfrom(1500)
+                print(self.udp_server)
                 if packet:
                     num, data = self.extract(packet)
                     print("Got packet ", num)
@@ -251,7 +252,7 @@ class handle_udp_client(Thread):
                     time.sleep(0.01)
 
             except socket.error as err:
-                print("Excepetion happend")
+                # print("Excepetion happend")
                 pass
 
             # sort packets, handle reordering
@@ -260,7 +261,7 @@ class handle_udp_client(Thread):
         packets = self.handle_duplicates(packets)
 
         with open(self.filename, 'wb') as f:
-            print(packets ,packets.__len__)
+            print(packets, packets.__len__)
             print('File opened')
             for p in packets:
                 print(p)
@@ -269,7 +270,6 @@ class handle_udp_client(Thread):
 
         f.close()
         self.end_connection()
-
 
     def handle_duplicates(self, packets):
         i = 0
@@ -281,7 +281,7 @@ class handle_udp_client(Thread):
         return packets
 
     def send_filename(self, filename):
-        return self.udp_sock.sendto(filename.encode(), (self.host, self.port))
+        return self.udp_sock.sendto(filename.encode(), self.udp_server)
 
     def end_connection(self):
         self.udp_sock.close()
@@ -293,10 +293,6 @@ class handle_udp_client(Thread):
     def extract(self, packet):
         num = int.from_bytes(packet[0:4], byteorder='little', signed=True)
         return num, packet[4:]
-
-
-
-
 
 
 # read_thread class. Gets all the "answers" from the server according to client's commands

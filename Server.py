@@ -14,7 +14,7 @@ class handle_udp(Thread):
     def __init__(self, address, file_name):
         Thread.__init__(self)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.client_udp = (address[0], address[1])
+        self.client_udp = (address[0], 55015)
         self.window_size = 8
         self.start_time = -1
         self.wait_time = 0.5
@@ -46,12 +46,12 @@ class handle_udp(Thread):
 
                 while base < pack_len:
                     while next_pack < base + window and next_pack < pack_len:
-                        print(next_pack)
+                        print(self.client_udp)
                         self.udp_sock.sendto(packets[next_pack], self.client_udp)
                         next_pack += 1
                     self.timer_start()
                     while self.timer_running() and not self.timer_timeout():
-                        data = self.udp_sock.recvfrom(1024)  # data= (msg, (ip, port))
+                        data = self.udp_sock.recvfrom(1500)  # data= (msg, (ip, port))
                         if data:
                             ack = data[0].decode()
                             if int(ack) >= base:
