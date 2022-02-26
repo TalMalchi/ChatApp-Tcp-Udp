@@ -2,7 +2,7 @@ import os
 
 from PySimpleGUI import *
 
-from Client import Client
+from Client2 import Client
 
 
 class GUI:

@@ -36,6 +36,7 @@ def client_main(client_sock: socket.socket, client_addr):
     # all possible server's responses to commands that a client can execute
     # LOGIN@Itay
     while True:
+        print(active_sockets.keys())
         try:
             msg = client_sock.recv(SIZE).decode('utf-8')
             cmd = msg[:msg.find("@")]
@@ -64,6 +65,7 @@ def client_main(client_sock: socket.socket, client_addr):
             elif cmd == "SHOWUSERS":
                 msg = "SHOWUSERS@"
                 msg += '\n'.join(c for c in active_sockets.keys())
+                print(msg)
                 client_sock.send(msg.encode('utf-8'))
 
             # download a file selected by the client

@@ -1,6 +1,6 @@
-import View
+import Client
 from Model import connWrite, connRead, Model
-from View import Gui
+from Client import Gui
 import socket
 
 
