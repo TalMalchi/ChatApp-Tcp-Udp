@@ -223,7 +223,7 @@ class handle_udp_client(Thread):
                 break
             # recieve something
             try:
-                packet, self.udp_server = self.udp_sock.recvfrom(1500)
+                packet, self.udp_server = self.udp_sock.recvfrom(1024)
                 if packet:
                     num, data = self.extract(packet)
                     print("Got packet ", num)

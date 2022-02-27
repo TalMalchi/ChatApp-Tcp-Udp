@@ -28,14 +28,14 @@ class handle_udp(Thread):
         with open(self.filename, 'rb') as file:
             while True:
                 # read chunck of 1020 bytes from file, to build packets with 1024 bytes (+4 bytes- ack's num)
-                file_contents = file.read(1020)
+                file_contents = file.read(978)
                 print(file_contents)
                 while file_contents:
                     # init packets array
                     packets.append(num.to_bytes(4, byteorder="little", signed=True) + file_contents)
                     num += 1
                     # read the next file bytes
-                    file_contents = file.read(1020)
+                    file_contents = file.read(978)
                 file.close()
 
                 pack_len = len(packets)
@@ -51,7 +51,7 @@ class handle_udp(Thread):
                         next_pack += 1
                     self.timer_start()
                     while self.timer_running() and not self.timer_timeout():
-                        data = self.udp_sock.recvfrom(1500)  # data= (msg, (ip, port))
+                        data = self.udp_sock.recvfrom(46)  # data= (msg, (ip, port))
                         if data:
                             ack = data[0].decode()
                             if int(ack) >= base:
