@@ -4,7 +4,7 @@ from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("10.0.2.13", 55000)
+serverAddr = ("192.168.1.31", 55000)
 
 
 class GUI:
@@ -207,10 +207,8 @@ class GUI:
         try:
             self.sock.send("DISCONNECT@LOGGEDOUT".encode('utf-8'))
             self.sock.close()
-            self.gui.Window.close()
             exit(-1)
         except:
-            self.gui.Window.close()
             exit(-1)
 
 class handle_udp_client(Thread):
@@ -383,7 +381,6 @@ if __name__ == '__main__':
     gui.welcome_screen()
 
 # TODO צריך לבדוק לגבי אלגוריתם CC 1.
-# TODO להוסיף טרדים לסוקט UDP לשליחת קבצים
-# TODO לבדוק קוד ואינפוטים יש טעויות
+# TODO לבדוק קוד ואינפוטים יש עטויות
 # TODO בדיקות קצה
 # TODO לדאוג למחיקת משתמש ב Signals מסויימים
