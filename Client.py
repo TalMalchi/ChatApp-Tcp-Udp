@@ -10,7 +10,7 @@ serverAddr = ("192.168.1.31", 55000)
 class GUI:
     def __init__(self):
         self.gui = PySimpleGUI
-        self.sock: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock: socket.socket = None
         self.window: PySimpleGUI.Window = None
         self.window_length = 1024
         self.window_height = 768
@@ -32,6 +32,7 @@ class GUI:
             if event == "OK" or event == self.gui.WINDOW_CLOSED:
                 break
             if event == "startBtn":
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.sock.connect(serverAddr)
                 read = read_trd(self)
                 read.start()
@@ -43,6 +44,7 @@ class GUI:
     # the screen opens when new client connects to the server, and can start using the chat
     def helloScreen(self):
         self.set_layout()
+
         # all the commands the client can choose from the screen.
         while True:
             event, values = self.window.read()
@@ -79,25 +81,13 @@ class GUI:
                 udp_trd = handle_udp_client(new_file_name)
                 udp_trd.start()
 
-                # ans = self.sock.recv(1024).decode()
-                #
-                # if ans == "OK":
-                #     self.gui.popup("File Found Starting Download")
-                #     with open(self.window["in4"].get(), 'wb') as file:
-                #         print("File Opened")
-                #         data = 1
-                #         while True:
-                #             data = self.user.client_sock.recv(1024)
-                #             if data.endswith("-@end@-".encode()):
-                #                 file.write(data[:-7])
-                #                 file.flush()
-                #                 file.close()
-                #                 print("File Closed")
-                #                 break
-                #
-                #             file.write(data)
-                #
-                #     print("File Written")
+            if event == "LOGOUT":
+                try:
+                    self.sock.close()
+                except:
+                    pass
+                self.window.close()
+                self.welcome_screen()
 
             # show all logges in users
             if event == "-USERS-":
@@ -133,6 +123,7 @@ class GUI:
         self.window["in2"].update(disabled=False)
         self.window["in3"].update(disabled=True)
         self.window["-USERS-"].update(disabled=False)
+        self.window["LOGOUT"].update(disabled=False)
 
     # "helloScreen" - opens when new client connects to the server
     def set_layout(self):
@@ -146,7 +137,7 @@ class GUI:
                  self.gui.Text("status:", pad=((0, 10), 0)),
                  self.gui.Text("offline", text_color="red", font=('MS Sans Serif', 10, 'bold'), key="__Status__",
                                pad=((0, 10), 0)),
-                 self.gui.Button("Clear", 'right', key="clear", size=(15,), disabled=False, pad=((320, 0), 0))
+                 self.gui.Button("Logout", key="LOGOUT", size=(15,), disabled=True, pad=((320, 0), 0))
                  ],
 
                 [
@@ -211,6 +202,7 @@ class GUI:
         except:
             exit(-1)
 
+
 class handle_udp_client(Thread):
     def __init__(self, filename):
         Thread.__init__(self)
@@ -219,7 +211,7 @@ class handle_udp_client(Thread):
         self.filename = filename
 
     def run(self):
-        self.udp_sock.bind(("",55015))
+        self.udp_sock.bind(("", 55015))
         self.udp_sock.setblocking(0)
         begin = time.time()
         timeout = 2
@@ -232,7 +224,6 @@ class handle_udp_client(Thread):
             # recieve something
             try:
                 packet, self.udp_server = self.udp_sock.recvfrom(1500)
-                print(self.udp_server)
                 if packet:
                     num, data = self.extract(packet)
                     print("Got packet ", num)
@@ -254,7 +245,6 @@ class handle_udp_client(Thread):
                     time.sleep(0.01)
 
             except socket.error as err:
-                # print("Excepetion happend")
                 pass
 
             # sort packets, handle reordering
@@ -263,10 +253,7 @@ class handle_udp_client(Thread):
         packets = self.handle_duplicates(packets)
 
         with open(self.filename, 'wb') as f:
-            print(packets, packets.__len__)
-            print('File opened')
             for p in packets:
-                print(p)
                 data = p[1]
                 f.write(data)
 
@@ -311,8 +298,6 @@ class read_trd(Thread):
                 msg = self.sock.recv(1024).decode('utf-8')
                 cmd = msg[:msg.find("@")]
                 data = msg[msg.find("@") + 1:]
-                # if msg or data or cmd is True:
-                #     print(f"{msg}\n")
 
                 if cmd == "LOGIN":
                     pass
@@ -340,7 +325,6 @@ class read_trd(Thread):
                     name = data[:data.find("@")]
                     chat_msg = data[data.find("@") + 1:]
                     new_msg = "".join([chat_msg[i:i + 30] + "\n" for i in range(0, len(chat_msg), 30)])
-                    print(new_msg)
                     if self.gui.message_queue.__len__() >= ChatSize:
                         self.gui.message_queue.pop(0)
                     self.gui.message_queue.append(f"{name} : {new_msg}")
@@ -372,7 +356,6 @@ class read_trd(Thread):
             except os.error as e:
                 print("An Error Occured please connect again.\n")
                 self.sock.close()
-                print(e)
                 exit(-1)
 
 
