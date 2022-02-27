@@ -204,10 +204,14 @@ class GUI:
 
     # close the chat when client logged out or disconnected
     def close(self):
-        self.sock.send("DISCONNECT@LOGGEDOUT".encode('utf-8'))
-        self.sock.close()
-        exit()
-
+        try:
+            self.sock.send("DISCONNECT@LOGGEDOUT".encode('utf-8'))
+            self.sock.close()
+            self.gui.Window.close()
+            exit(-1)
+        except:
+            self.gui.Window.close()
+            exit(-1)
 
 class handle_udp_client(Thread):
     def __init__(self, filename):
