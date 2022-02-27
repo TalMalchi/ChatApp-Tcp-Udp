@@ -190,7 +190,7 @@ class GUI:
                     self.gui.ProgressBar(100, size=(20, 10))
                 ]
             ]
-
+        self.window.close()
         self.window = self.gui.Window("Launcher", layout, size=(1024, 768), grab_anywhere=True)
 
     # close the chat when client logged out or disconnected
