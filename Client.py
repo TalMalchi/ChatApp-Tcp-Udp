@@ -4,7 +4,7 @@ from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("10.0.2.8", 55000)
+serverAddr = ("10.9.14.203", 55000)
 
 
 class GUI:
@@ -202,63 +202,66 @@ class GUI:
         except:
             exit(-1)
 
-
+#download a file with UDP connection
 class handle_udp_client(Thread):
     def __init__(self, filename):
         Thread.__init__(self)
-        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # init new UDP socket
         self.udp_server = None
         self.filename = filename
-
+    # main run thread function
     def run(self):
         self.udp_sock.bind(("", 55015))
         self.udp_sock.setblocking(0)
-        begin = time.time()
+        start_time = time.time()
         timeout = 2
         expected = 0
         packets = []
         while True:
-            # wait if you have no data
-            if time.time() - begin > timeout:
+            # to check reliable data transfer
+            # Timer-> if there isn't new data in particular time, break
+            if time.time() - start_time > timeout:
                 break
-            # recieve something
+            # recieve data from the server
             try:
                 packet, self.udp_server = self.udp_sock.recvfrom(1024)
                 if packet:
-                    num, data = self.extract(packet)
+                    num, data = self.packet_info(packet)
                     print("Got packet ", num)
 
-                    # Send acknlowedgement to the sender
+                    # send acknow-ledgment message to the server if the expected packet get succssfully
                     if num == expected:
-                        print("Sending acknlowedgement ", expected)
-                        self.send_filename(str(expected))
+                        print("Sending ack message ", expected)
+                        self.send_filename(str(expected)) # למה?
                         expected += 1
-                        packets.append((num, data))
+                        packets.append((num, data)) #add the packet to packet_list
 
-                    else:
+                    else: # if we receive another packets //?למה הוא מחזיר את אחת לפני האחרונה
                         print("Sending acknlowedgement ", (expected - 1))
-                        self.send_filename(str(expected - 1))
+                        self.send_filename(str(expected - 1)) #למה זה קורה?
 
-                    begin = time.time()
+                    start_time = time.time()
 
-                else:
+                else: # למה עושים סליפ?
                     time.sleep(0.01)
 
             except socket.error as err:
                 pass
 
-            # sort packets, handle reordering
+            # sort packets, handle reordering למה ממינים??
         sorted(packets, key=lambda x: x[0])
 
         packets = self.handle_duplicates(packets)
 
+        # writes the file
         with open(self.filename, 'wb') as f:
             for p in packets:
                 data = p[1]
                 f.write(data)
 
         f.close()
-        self.end_connection()
+        self.udp_sock.close()
+        #self.end_connection()
 
     def handle_duplicates(self, packets):
         i = 0
@@ -272,14 +275,15 @@ class handle_udp_client(Thread):
     def send_filename(self, filename):
         return self.udp_sock.sendto(filename.encode(), self.udp_server)
 
-    def end_connection(self):
-        self.udp_sock.close()
+    # def end_connection(self):
+    #     self.udp_sock.close()
 
-    def make_packet(self, acknum, data=b''):
+    def make_packet(self, acknum, data=b''): #איפה משתמשים בזה?????
         ackbytes = acknum.to_bytes(4, byteorder='little', signed=True)
         return ackbytes + data
 
-    def extract(self, packet):
+    #extract packet's information from bytes to int
+    def packet_info(self, packet):
         num = int.from_bytes(packet[0:4], byteorder='little', signed=True)
         return num, packet[4:]
 

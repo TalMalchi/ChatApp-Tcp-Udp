@@ -23,8 +23,8 @@ class handle_udp(Thread):
     def run(self):
         packets = []
         num = 0
-        # open the file with binary
         print("GOT HERE")
+        # open the file with binary
         with open(self.filename, 'rb') as file:
             while True:
                 # read chunck of 1020 bytes from file, to build packets with 1024 bytes (+4 bytes- ack's num)
