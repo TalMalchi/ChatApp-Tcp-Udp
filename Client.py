@@ -4,7 +4,7 @@ from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("10.9.14.203", 55000)
+serverAddr = ("192.168.1.30", 55000)
 
 
 class GUI:
@@ -236,18 +236,18 @@ class handle_udp_client(Thread):
                         expected += 1
                         packets.append((num, data)) #add the packet to packet_list
 
-                    else: # if we receive another packets //?למה הוא מחזיר את אחת לפני האחרונה
+                    else: # if we receive another packets //
                         print("Sending acknlowedgement ", (expected - 1))
-                        self.send_filename(str(expected - 1)) #למה זה קורה?
+                        self.send_filename(str(expected - 1))
 
                     start_time = time.time()
 
-                else: # למה עושים סליפ?
+                else:
                     time.sleep(0.01)
 
             except socket.error as err:
                 pass
-
+        print(packets)
             # sort packets, handle reordering למה ממינים??
         sorted(packets, key=lambda x: x[0])
 
