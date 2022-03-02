@@ -41,33 +41,34 @@ class handle_udp(Thread):
                 pack_len = len(packets)
                 print(pack_len)
                 next_pack = 0
-                base = 0
-                window = self.set_window(pack_len, base)
+                counter_packets = 0
+                window = self.set_window(pack_len, counter_packets)
 
-                while base < pack_len:
-                    while next_pack < base + window and next_pack < pack_len:
+                while counter_packets < pack_len:
+                    while next_pack < counter_packets + window and next_pack < pack_len:
                         print(self.client_udp)
+                        # (data,(ip,port))
                         self.udp_sock.sendto(packets[next_pack], self.client_udp)
                         next_pack += 1
                     self.timer_start()
                     while self.timer_running() and not self.timer_timeout():
-                        data = self.udp_sock.recvfrom(46)  # data= (msg, (ip, port))
+                        data = self.udp_sock.recvfrom(64)  # data= (msg, (ip, port)) #ack
                         if data:
                             ack = data[0].decode()
-                            if int(ack) >= base:
-                                base = int(ack) + 1
+                            if int(ack) >= counter_packets:
+                                counter_packets = int(ack) + 1
                                 self.stop_timer()
                             else:
-                                base = int(ack)
-                                next_pack = base
+                                counter_packets = int(ack)
+                                next_pack = counter_packets
                                 self.stop_timer()
                     if self.timer_timeout():
                         self.stop_timer()
-                        next_pack = base
+                        next_pack = counter_packets
 
                     else:
                         print("shifting window")
-                        self.window_size = self.set_window(pack_len, base)
+                        self.window_size = self.set_window(pack_len, counter_packets)
                 break
 
     def timer_start(self):
