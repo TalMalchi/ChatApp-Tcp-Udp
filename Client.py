@@ -4,7 +4,7 @@ from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("192.168.1.30", 55000)
+serverAddr = ("127.0.0.1", 55000)
 
 
 class GUI:
@@ -83,11 +83,15 @@ class GUI:
 
             if event == "LOGOUT":
                 try:
+                    self.sock.send("LOGOUT@Logging out".encode())
                     self.sock.close()
                 except:
                     pass
-                self.window.close()
-                self.welcome_screen()
+                finally:
+                    self.window.close()
+                    self.welcome_screen()
+
+
 
             # show all logges in users
             if event == "-USERS-":
@@ -202,13 +206,15 @@ class GUI:
         except:
             exit(-1)
 
-#download a file with UDP connection
+
+# download a file with UDP connection
 class handle_udp_client(Thread):
     def __init__(self, filename):
         Thread.__init__(self)
-        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # init new UDP socket
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # init new UDP socket
         self.udp_server = None
         self.filename = filename
+
     # main run thread function
     def run(self):
         self.udp_sock.bind(("", 55015))
@@ -232,11 +238,11 @@ class handle_udp_client(Thread):
                     # send acknow-ledgment message to the server if the expected packet get succssfully
                     if num == expected:
                         print("Sending ack message ", expected)
-                        self.send_filename(str(expected)) # למה?
+                        self.send_filename(str(expected))  # למה?
                         expected += 1
-                        packets.append((num, data)) #add the packet to packet_list
+                        packets.append((num, data))  # add the packet to packet_list
 
-                    else: # if we receive another packets //
+                    else:  # if we receive another packets //
                         print("Sending acknlowedgement ", (expected - 1))
                         self.send_filename(str(expected - 1))
 
@@ -248,7 +254,7 @@ class handle_udp_client(Thread):
             except socket.error as err:
                 pass
         print(packets)
-            # sort packets, handle reordering למה ממינים??
+        # sort packets, handle reordering למה ממינים??
         sorted(packets, key=lambda x: x[0])
 
         packets = self.handle_duplicates(packets)
@@ -261,7 +267,7 @@ class handle_udp_client(Thread):
 
         f.close()
         self.udp_sock.close()
-        #self.end_connection()
+        # self.end_connection()
 
     def handle_duplicates(self, packets):
         i = 0
@@ -278,11 +284,11 @@ class handle_udp_client(Thread):
     # def end_connection(self):
     #     self.udp_sock.close()
 
-    def make_packet(self, acknum, data=b''): #איפה משתמשים בזה?????
+    def make_packet(self, acknum, data=b''):  # איפה משתמשים בזה?????
         ackbytes = acknum.to_bytes(4, byteorder='little', signed=True)
         return ackbytes + data
 
-    #extract packet's information from bytes to int
+    # extract packet's information from bytes to int
     def packet_info(self, packet):
         num = int.from_bytes(packet[0:4], byteorder='little', signed=True)
         return num, packet[4:]
@@ -320,9 +326,6 @@ class read_trd(Thread):
                     users = [x for x in data.split('\n')]
                     self.gui.window["-USERS LIST-"].update(values=users, visible=True)
 
-                # download a file selected by the client
-                elif cmd == "DOWNLOAD":
-                    pass
 
                 # show a public message in the chat, sent from one client to all connected users
                 elif cmd == "MSG":

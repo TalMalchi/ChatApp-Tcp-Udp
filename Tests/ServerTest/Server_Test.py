@@ -1,12 +1,13 @@
 import socket
 import unittest
-
+import Server
 
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        serverAddr = ("127.0.0.1",55000)
-        serverSock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        serverSock.bind(serverAddr)
+        server = Server()
+
+
+    def tearDown(self) -> None:
 
     def test_something(self):
         self.assertEqual(True, False)  # add assertion here
