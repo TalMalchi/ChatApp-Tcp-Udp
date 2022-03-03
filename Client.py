@@ -9,6 +9,7 @@ serverAddr = ("127.0.0.1", 55000)
 
 class GUI:
     def __init__(self):
+        self.readtrd : read_trd = None
         self.gui = PySimpleGUI
         self.sock: socket.socket = None
         self.window: PySimpleGUI.Window = None
@@ -34,8 +35,8 @@ class GUI:
             if event == "startBtn":
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.sock.connect(serverAddr)
-                read = read_trd(self)
-                read.start()
+                self.readtrd = read_trd(self)
+                self.readtrd.start()
                 self.helloScreen()
 
             else:
@@ -359,7 +360,6 @@ class read_trd(Thread):
                     self.gui.window["-Chat-"].update(values=self.gui.message_queue)
 
             except os.error as e:
-                print("An Error Occured please connect again.\n")
                 self.sock.close()
                 exit(-1)
 
