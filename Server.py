@@ -15,7 +15,6 @@ class Server:
         self.udpsocks = {}
 
     def client_main(self, client_sock: socket.socket, client_addr):
-        global active_sockets
         # new client logged in successfully
         print(f"New Connection {client_addr} connected successfully.\n")
         client_sock.send("LOGIN@Connected Succesfully.\n".encode('utf-8'))
@@ -54,7 +53,7 @@ class Server:
                 # shows all logged in users
                 elif cmd == "SHOWUSERS":
                     msg = "SHOWUSERS@"
-                    msg += '\n'.join(c for c in active_sockets.keys())
+                    msg += '\n'.join(c for c in self.active_sockets.keys())
                     print(msg)
                     client_sock.send(msg.encode('utf-8'))
 
