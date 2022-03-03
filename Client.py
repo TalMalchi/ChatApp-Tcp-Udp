@@ -83,6 +83,7 @@ class GUI:
 
             if event == "LOGOUT":
                 try:
+                    self.sock.send("LOGOUT@Logging out\n".encode())
                     self.sock.close()
                 except:
                     pass
