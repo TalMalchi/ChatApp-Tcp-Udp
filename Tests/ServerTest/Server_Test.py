@@ -1,8 +1,8 @@
 import socket
-import unittest
+from unittest import TestCase
 
 
-class MyTestCase(unittest.TestCase):
+class MyTestCase(TestCase):
     def setUp(self) -> None:
         serverAddr = ("127.0.0.1",55000)
         serverSock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)

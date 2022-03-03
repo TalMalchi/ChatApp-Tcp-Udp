@@ -122,6 +122,7 @@ class Server:
             thread.start()
 
 
+# this class handle with file download with UDP protocol
 class handle_udp(Thread):
     def __init__(self, address, file_name):
         Thread.__init__(self)
