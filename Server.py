@@ -126,30 +126,29 @@ class Server:
         for v in self.active_clients.values():
             v.send(msg.encode('utf-8'))
 
-
+# this class handle with file download with UDP protocol
 class handle_udp(Thread):
-    def __init__(self, address, file_name):
-        Thread.__init__(self)
+    def _init_(self, address, file_name):
+        Thread._init_(self)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client_udp = (address[0], 55015)
         self.window_size = 8
         self.start_time = -1
-        self.wait_time = 0.001
+        self.wait_time = 0.5
         self.filename = file_name
 
     def run(self):
         packets = []
         num = 0
         print("GOT HERE")
-        # open the file with binary
+        # open the file the client ask to download with binary
         with open(self.filename, 'rb') as file:
             while True:
-                # read chunck of 978 bytes from file, to build packets with 1024 bytes
-                # (+4 bytes- ack's num +42 byte udp header)
+                # read chunck of 1020 bytes from file, to build packets with 1024 bytes (+4 bytes- ack's num)
                 file_contents = file.read(978)
                 print(file_contents)
                 while file_contents:
-                    # init packets array
+                    # init packets array from the file
                     packets.append(num.to_bytes(4, byteorder="little", signed=True) + file_contents)
                     num += 1
                     # read the next file bytes
@@ -157,32 +156,34 @@ class handle_udp(Thread):
                 file.close()
 
                 pack_len = len(packets)
-                next_pack = 0
-                counter_packets = 0
+                print(pack_len)
+                next_pack = 0 # for case we loss packet, and we will send it again
+                counter_packets = 0 # the next packet we supposed to get ack on
                 window = self.set_window(pack_len, counter_packets)
 
+                # sending first 8 messages to the client
                 while counter_packets < pack_len:
                     while next_pack < counter_packets + window and next_pack < pack_len:
+                        print(self.client_udp)
+                        # (data,(ip,port))
                         self.udp_sock.sendto(packets[next_pack], self.client_udp)
                         next_pack += 1
-                    self.timer_start()
-
-                    while self.timer_running() and not self.timer_timeout():
+                    self.start_time()
+                    while self.running_time() and not self.timer_timeout():
+                        # receive ack message from the client
                         data = self.udp_sock.recvfrom(64)  # data= (msg, (ip, port)) #ack
                         if data:
                             ack = data[0].decode()
+                            # if the ack's number is bigger/equals to the counter_packets, means we got the right ack's packet
                             if int(ack) >= counter_packets:
-                                print(f"If _ GOT ACK : {int(ack)}\n")
                                 counter_packets = int(ack) + 1
                                 self.stop_timer()
+                            # else, we didnt get the right ack, so we will send the packet again
                             else:
-                                print(f"Else _ GOT ACK : {int(ack)}\n")
                                 counter_packets = int(ack)
                                 next_pack = counter_packets
                                 self.stop_timer()
-
                     if self.timer_timeout():
-                        print("TimeOut\n")
                         self.stop_timer()
                         next_pack = counter_packets
 
@@ -191,18 +192,18 @@ class handle_udp(Thread):
                         self.window_size = self.set_window(pack_len, counter_packets)
                 break
 
-    def timer_start(self):
+    def start_time(self):
         if self.start_time == -1:
             self.start_time = time.time()
 
-    def set_window(self, num_packets, counter_packets):
-        return min(self.window_size, num_packets - counter_packets)
+    def set_window(self, num_packets, base):
+        return min(self.window_size, num_packets - base)
 
-    def timer_running(self):
+    def running_time(self):
         return self.start_time != -1
 
     def timer_timeout(self):
-        if not self.timer_running():
+        if not self.running_time():
             return False
         else:
             return time.time() - self.start_time >= self.wait_time
@@ -210,7 +211,6 @@ class handle_udp(Thread):
     def stop_timer(self):
         if self.start_time != -1:
             self.start_time = -1
-
 
 if __name__ == '__main__':
     # server socket
