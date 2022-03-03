@@ -95,9 +95,16 @@ class Server:
         for name, sock in self.active_clients.items():
             if cl is sock:
                 # update all the users that this client has left
-                self.broadcast(f"Notice@{name} left the chat.\n")
-                # remove the client from active_sockets dict
                 del self.active_clients[name]
+                self.broadcast(f"Notice@{name} left the chat.\n")
+                print(name + "Left the Chat")
+                # remove the client from active_sockets dict
+                try:
+                    cl.close()
+                    break
+                except socket.error:
+                    pass
+                break
 
     # send a message to all activities users
     def broadcast(self, msg):
