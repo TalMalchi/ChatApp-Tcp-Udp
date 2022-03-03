@@ -3,11 +3,8 @@ import socket
 from threading import Thread
 import time
 
-SERVERADDR = ("", 55000)
-SIZE = 1024
 
-# clients = []
-active_sockets = {}
+SIZE = 1024
 
 
 class Server:
