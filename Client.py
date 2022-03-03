@@ -4,7 +4,7 @@ from threading import Thread
 from PySimpleGUI import *
 
 ChatSize = 20
-serverAddr = ("192.168.1.30", 55000)
+serverAddr = ("127.0.0.1", 55000)
 
 
 class GUI:
