@@ -52,8 +52,9 @@ class Server:
 
                 # shows all logged in users
                 elif cmd == "SHOWUSERS":
+                    print("IN HERE")
                     msg = "SHOWUSERS@"
-                    msg += '\n'.join(c for c in self.active_sockets.keys())
+                    msg += '\n'.join(c for c in self.active_clients.keys())
                     print(msg)
                     client_sock.send(msg.encode('utf-8'))
 
@@ -170,14 +171,19 @@ class handle_udp(Thread):
                     while self.timer_running() and not self.timer_timeout():
                         data = self.udp_sock.recvfrom(64)  # data= (msg, (ip, port)) #ack
                         if data:
-                            ack = data[0].decode()
-                            if int(ack) >= counter_packets:
-                                counter_packets = int(ack) + 1
-                                self.stop_timer()
+                            msg = data[0].decode()
+                            if msg == "STOP":
+                                print("GOT IN STOP")
+                                self.pause_trd()
                             else:
-                                counter_packets = int(ack)
-                                next_pack = counter_packets
-                                self.stop_timer()
+                                ack = data[0].decode()
+                                if int(ack) >= counter_packets:
+                                    counter_packets = int(ack) + 1
+                                    self.stop_timer()
+                                else:
+                                    counter_packets = int(ack)
+                                    next_pack = counter_packets
+                                    self.stop_timer()
                     if self.timer_timeout():
                         self.stop_timer()
                         next_pack = counter_packets
@@ -206,6 +212,17 @@ class handle_udp(Thread):
     def stop_timer(self):
         if self.start_time != -1:
             self.start_time = -1
+
+    def pause_trd(self):
+        flag = True
+        while flag:
+            data = self.udp_sock.recv(64)
+            if data:
+                curr = data.decode()
+                if curr == "Resume":
+                    flag = False
+            else:
+                time.sleep(2)
 
 
 if __name__ == '__main__':
