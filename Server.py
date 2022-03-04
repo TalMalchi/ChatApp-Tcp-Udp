@@ -84,10 +84,12 @@ class Server:
                     sendto = rest[0:rest.find("@")]
                     new_msg = rest[rest.find("@") + 1:]
                     self.active_clients[sendto].send(f"PMSG@{sender}@{new_msg}".encode('utf-8'))
+                    print(new_msg)
+                    print(f"PMSG@{sender}@{new_msg}")
                     self.active_clients[sender].send(f"PMSG_S@{sendto}@{new_msg}".encode('utf-8'))
+                    print(f"PMSG_S@{sendto}@{new_msg}")
 
             except:
-                print(f"{client_addr} Disconnected from server.\n")
                 for k, v in self.active_clients.items():
                     if v is client_sock:
                         self.remove_socket(v)
