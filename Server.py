@@ -47,7 +47,10 @@ class Server:
                 # gives all the files in server
                 elif cmd == "SHOWFILES":
                     msg = "SHOWFILES@"
-                    msg += '\n'.join(file for file in os.listdir("files"))
+                    try:
+                        msg += '\n'.join(file for file in os.listdir("files"))
+                    except os.error:
+                        print("File Dir doesnt Exist")
                     client_sock.send(msg.encode('utf-8'))
 
                 # shows all logged in users
