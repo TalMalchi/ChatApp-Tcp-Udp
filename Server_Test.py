@@ -2,9 +2,7 @@ import os
 import socket
 import threading
 import time
-
 import Server
-
 from unittest import TestCase
 
 
@@ -27,9 +25,8 @@ class ServerTest(TestCase):
         self.assertEqual(msg4, "SHOWFILES@")
         # self.clientSock.send("SHOWUSERS@".encode('utf-8'))
         # msg3 = self.clientSock.recv(1024).decode('utf-8')
-        # print(msg3 + "MOM")
-        # self.assertEqual("SHOWUSERS@tal",msg3)
-
+        # print(msg3)
+        # self.assertEqual("SHOWUSERS@tal", msg3)
         self.clientSock.close()
 
     def tearDown(self) -> None:

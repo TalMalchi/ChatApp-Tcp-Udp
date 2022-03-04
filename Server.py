@@ -48,6 +48,7 @@ class Server:
                 elif cmd == "SHOWFILES":
                     msg = "SHOWFILES@"
                     msg += '\n'.join(file for file in os.listdir("files"))
+                    print(msg)
                     client_sock.send(msg.encode('utf-8'))
 
                 # shows all logged in users
