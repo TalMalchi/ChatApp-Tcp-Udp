@@ -1,5 +1,6 @@
 import os
 import socket
+import time
 from threading import Thread
 from PySimpleGUI import *
 
@@ -82,6 +83,14 @@ class GUI:
                 udp_trd = handle_udp_client(new_file_name)
                 udp_trd.start()
 
+            if event == "PAUSE":
+                if not udp_trd.pause:
+                    udp_trd.pause = True
+                    self.window["PAUSE"].update(text="Resume")
+                else:
+                    udp_trd.pause = False
+                    self.window["PAUSE"].update(text="Pause")
+
             if event == "LOGOUT":
                 try:
                     self.sock.send("LOGOUT@Logging out\n".encode())
@@ -126,6 +135,8 @@ class GUI:
         self.window["in3"].update(disabled=True)
         self.window["-USERS-"].update(disabled=False)
         self.window["LOGOUT"].update(disabled=False)
+        self.window["PAUSE"].update(disabled=False)
+
 
     # "helloScreen" - opens when new client connects to the server
     def set_layout(self):
@@ -184,7 +195,9 @@ class GUI:
                     self.gui.Input("", disabled=True, disabled_readonly_background_color="grey",
                                    size=(25,), key="in3"),
                     self.gui.Input("", size=(25,), key="in4"),
-                    self.gui.Button("Download", disabled=True, size=(25,), key="-DOWNLOAD-")
+                    self.gui.Button("Download", disabled=True, size=(25,), key="-DOWNLOAD-"),
+                    self.gui.Button("Pause", disabled=True, size=(25,), key="PAUSE")
+
                 ]
                 ,
                 [
@@ -210,6 +223,7 @@ class handle_udp_client(Thread):
         Thread.__init__(self)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # init new UDP socket
         self.udp_server = None
+        self.pause = False
         self.filename = filename
     # main run thread function
     def run(self):
@@ -220,6 +234,12 @@ class handle_udp_client(Thread):
         expected = 0
         packets = []
         while True:
+            if self.pause:
+                self.udp_sock.sendto("STOP".encode(), self.udp_server)
+                while self.pause:
+                    time.sleep(2)
+                self.udp_sock.sendto("Resume".encode(),self.udp_server)
+                start_time = time.time()
             # to check reliable data transfer
             # Timer-> if there isn't new data in particular time, break
             if time.time() - start_time > timeout:
@@ -249,7 +269,6 @@ class handle_udp_client(Thread):
 
             except socket.error as err:
                 pass
-        print(packets)
             # sort packets, handle reordering למה ממינים??
         sorted(packets, key=lambda x: x[0])
 
