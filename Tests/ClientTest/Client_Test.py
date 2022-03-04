@@ -1,10 +1,12 @@
-import unittest
+from unittest import TestCase
+from Client import GUI
 
 
-class MyTestCase(unittest.TestCase):
-    def test_something(self):
+class ClientTest(TestCase):
+
+    def Setup(self):
+        Client = GUI()
         self.assertEqual(True, False)  # add assertion here
 
 
-if __name__ == '__main__':
-    unittest.main()
+
