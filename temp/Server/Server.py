@@ -154,19 +154,24 @@ class handle_udp(Thread):
         self.packets_acks = [False for i in range(self.packets.__len__())]
 
         while self.currPack < self.packets.__len__() or self.window.__len__() > 0:
+            print("Window Size: ", self.window_size , "Window_len",self.window.__len__())
+
             if self.window.__len__() < self.window_size:
                 print("Window Size: " , self.window_size)
                 self.prepare_window()
             for packet in self.window:
                 self.udp_sock.sendto(self.window[packet], self.client_udp)
             self.timer = time.time()
+            self.timeout = self.window_size * 0.5
             while not time.time() - self.timer >= self.timeout:
+                print("%.2gs" % (time.time() - self.timer))
                 data = self.udp_sock.recvfrom(64)
                 if data:
                     ack = int(data[0].decode('utf-8'))
                     print("Curr Ack: ", ack)
                     if not self.packets_acks[ack]:
                         self.packets_acks[ack] = True
+                    print(f"Popping ack : {ack}")
                     self.window.pop(ack)
                 else:
                     time.sleep(0.1)
@@ -214,6 +219,7 @@ class handle_udp(Thread):
             print(msg)
             self.udp_sock.sendto(msg, self.client_udp)
             start = time.time()
+            print(time.time()-start)
             while time.time()-start < self.timeout:
                 data = self.udp_sock.recv(64)
                 if data:

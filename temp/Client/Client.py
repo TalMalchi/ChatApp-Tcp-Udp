@@ -245,26 +245,29 @@ class handle_udp_client(Thread):
 
         while self.currpac < self.expected:
             self.timer = time.time()
-            while self.windowLen < self.windowSize and not self.timeout():
-                data = self.udp_sock.recv(1024)
-                if data:
-                    ack, packet = self.packet_info(data)
-                    self.packets[ack] = packet
-                    self.currpac += 1
-                    self.packets_ack.append(str(ack))
-                else:
-                    self.packets_ack.append(str(ack))
-
-                self.windowLen += 1
-
+            print(self.windowSize , self.packets_ack.__len__())
+            while self.packets_ack.__len__() < self.windowSize and not self.timeout():
+                try:
+                    data = self.udp_sock.recv(1024)
+                    if data:
+                        ack, packet = self.packet_info(data)
+                        self.packets[ack] = packet
+                        self.currpac += 1
+                        self.packets_ack.append(str(ack))
+                    else:
+                        time.sleep(0.01)
+                except:
+                    time.sleep(0.01)
             self.timer = time.time()
 
-            while self.windowLen > 0 and not self.timeout():
+            print(self.windowSize , self.packets_ack.__len__())
+
+            while self.packets_ack.__len__() > 0 and not self.timeout():
                 for ack in self.packets_ack:
                     self.udp_sock.sendto(ack.encode('utf-8'), self.udp_server)
                     self.packets_ack.remove(ack)
 
-            if self.windowLen > 0:
+            if self.packets_ack.__len__() > 0:
                 self.windowrate = 1
                 self.update_window()
             else:
