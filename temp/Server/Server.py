@@ -152,19 +152,21 @@ class handle_udp(Thread):
         self.prepare_packets()
         self.update_client()
         self.packets_acks = [False for i in range(self.packets.__len__())]
-
+        i=0
         while self.currPack < self.packets.__len__() or self.window.__len__() > 0:
             print("Window Size: ", self.window_size , "Window_len",self.window.__len__())
 
             if self.window.__len__() < self.window_size:
                 print("Window Size: " , self.window_size)
                 self.prepare_window()
+                print("After Window Size: window len = " , self.window.__len__())
             for packet in self.window:
                 self.udp_sock.sendto(self.window[packet], self.client_udp)
             self.timer = time.time()
             self.timeout = self.window_size * 0.5
-            while not time.time() - self.timer >= self.timeout:
-                print("%.2gs" % (time.time() - self.timer))
+            print("Timeout = ", self.timeout)
+            while not time.time() - self.timer >= self.timeout and self.window.__len__()>0:
+                print("%.2gs" % (time.time() - self.timer) , "Timeout = " , self.timeout)
                 data = self.udp_sock.recvfrom(64)
                 if data:
                     ack = int(data[0].decode('utf-8'))
@@ -173,8 +175,12 @@ class handle_udp(Thread):
                         self.packets_acks[ack] = True
                     print(f"Popping ack : {ack}")
                     self.window.pop(ack)
+                    print("Current window size after pop",self.window.__len__())
                 else:
                     time.sleep(0.1)
+
+            print(f"i = {i}")
+            i += 1
 
             # Timout Occured can tell by window size is not 0 (Didnt get all acks)
             if self.window.__len__() > 0:
@@ -184,7 +190,8 @@ class handle_udp(Thread):
             self.update_window()
 
     def prepare_window(self):
-        while self.window.__len__() < self.window_size:
+        while self.window.__len__() < self.window_size and self.currPack<self.packets.__len__():
+            print("Curr pack = " ,self.currPack)
             if not self.packets_acks[self.currPack]:
                 self.window[self.currPack] = self.packets[self.currPack]
                 self.currPack += 1
