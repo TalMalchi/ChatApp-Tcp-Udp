@@ -3,12 +3,11 @@ import socket
 from threading import Thread
 import time
 
-
 SIZE = 1024
 
 
 class Server:
-    def __init__(self, Serveraddr=("127.0.0.1", 55000)):
+    def __init__(self, Serveraddr=("", 55000)):
         self.serverAddr = Serveraddr
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.active_clients = {}
@@ -138,7 +137,7 @@ class handle_udp(Thread):
         self.client_udp = (address[0], 55015)
         self.window_size = 8
         self.start_time = -1
-        self.wait_time = 0.5
+        self.wait_time = 0.01
         self.filename = file_name
 
     def run(self):
@@ -162,7 +161,7 @@ class handle_udp(Thread):
                 next_pack = 0
                 counter_packets = 0
                 window = self.set_window(pack_len, counter_packets)
-                self.udp_sock.sendto(pack_len.__str__().encode(),self.client_udp)
+                self.udp_sock.sendto(pack_len.__str__().encode(), self.client_udp)
                 print("Sent ready msg")
                 while counter_packets < pack_len:
                     while next_pack < counter_packets + window and next_pack < pack_len:
@@ -209,7 +208,7 @@ class handle_udp(Thread):
         if not self.timer_running():
             return False
         else:
-            return time.time() - self.start_time >= self.wait_time
+            return time.time() - self.start_time >= self.wait_time * self.window_size
 
     def stop_timer(self):
         if self.start_time != -1:

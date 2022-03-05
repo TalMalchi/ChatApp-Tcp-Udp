@@ -3,9 +3,10 @@ import socket
 import time
 from threading import Thread
 from PySimpleGUI import *
+from sys import argv
 
 ChatSize = 20
-serverAddr = ("127.0.0.1", 55000)
+serverAddr = ("10.0.2.15", 55000)
 
 
 class GUI:
@@ -81,7 +82,7 @@ class GUI:
                 file_name = self.window["in3"].get()
                 new_file_name = self.window["in4"].get()
                 self.sock.send(f"DOWNLOAD@{file_name}".encode('utf-8'))
-                udp_trd = handle_udp_client(new_file_name, self.window ,self.gui)
+                udp_trd = handle_udp_client(new_file_name, self.window, self.gui)
                 udp_trd.start()
 
             if event == "PAUSE":
@@ -202,7 +203,7 @@ class GUI:
                 ,
                 [
                     self.gui.Text("Progress Bar"),
-                    self.gui.ProgressBar(100, size=(20, 10),key="Progbar")
+                    self.gui.ProgressBar(100, size=(20, 10), key="Progbar")
                 ]
             ]
         self.window.close()
@@ -220,7 +221,7 @@ class GUI:
 
 # download a file with UDP connection
 class handle_udp_client(Thread):
-    def __init__(self, filename, window,gui):
+    def __init__(self, filename, window, gui):
         Thread.__init__(self)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # init new UDP socket
         self.udp_server = None
@@ -247,7 +248,7 @@ class handle_udp_client(Thread):
         start = datetime.datetime.now()
         numofpacks = self.waitforserver()
         while True:
-            self.gui["Progbar"].UpdateBar(int(expected/numofpacks*100))
+            self.window["Progbar"].UpdateBar(int(expected / numofpacks * 100))
             if self.pause:
                 self.udp_sock.sendto("STOP".encode(), self.udp_server)
                 while self.pause:
@@ -283,8 +284,6 @@ class handle_udp_client(Thread):
                     "Print Cannot download file please close program and try again"
                     break
                 pass
-
-
 
         end = datetime.datetime.now()
         print(end - start)
@@ -332,7 +331,7 @@ class handle_udp_client(Thread):
             try:
                 data = self.udp_sock.recvfrom(64)
                 if data:
-                    numofpack =int(data[0].decode())
+                    numofpack = int(data[0].decode())
                     self.udp_server = data[1]
                     print("Got Server udp address")
                     return numofpack
@@ -415,6 +414,9 @@ class read_trd(Thread):
 
 
 if __name__ == '__main__':
+    if argv.__len__() > 2:
+        ip = argv[1]
+        port = int(argv[2])
     gui = GUI()
     gui.welcome_screen()
 
