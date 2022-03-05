@@ -234,6 +234,7 @@ class handle_udp_client(Thread):
         self.windowSize = 1
         self.windowLen = 0
         self.currpac = 0
+        self.timeout_time = 0.2
         self.timer = time.time()
 
     # main run thread function
@@ -243,16 +244,18 @@ class handle_udp_client(Thread):
         self.udp_sock.setblocking(0)
         self.get_packets_len()
 
+        start = datetime.datetime.now()
+        print(start)
         while self.currpac < self.expected:
             self.timer = time.time()
-            print(self.windowSize , self.packets_ack.__len__())
             while self.packets_ack.__len__() < self.windowSize and not self.timeout():
                 try:
                     data = self.udp_sock.recv(1024)
                     if data:
                         ack, packet = self.packet_info(data)
-                        self.packets[ack] = packet
-                        self.currpac += 1
+                        if ack not in self.packets.keys():
+                            self.packets[ack] = packet
+                            self.currpac += 1
                         self.packets_ack.append(str(ack))
                     else:
                         time.sleep(0.01)
@@ -260,11 +263,11 @@ class handle_udp_client(Thread):
                     time.sleep(0.01)
             self.timer = time.time()
 
-            print(self.windowSize , self.packets_ack.__len__())
 
             while self.packets_ack.__len__() > 0 and not self.timeout():
                 for ack in self.packets_ack:
                     self.udp_sock.sendto(ack.encode('utf-8'), self.udp_server)
+
                     self.packets_ack.remove(ack)
 
             if self.packets_ack.__len__() > 0:
@@ -273,20 +276,27 @@ class handle_udp_client(Thread):
             else:
                 self.update_window()
 
+        print(self.currpac)
         # writes the file
         with open(self.filename, 'wb') as f:
-            for p in sorted(self.packets.keys):
+            for p in sorted(self.packets.keys()):
+                print("Writing file part num - " , p)
                 data = self.packets[p]
                 f.write(data)
+                f.flush()
 
         f.close()
         self.udp_sock.close()
+        end = datetime.datetime.now()
+        print(end)
+        print(end-start)
         # self.end_connection()
 
+
     def update_window(self):
-        if self.windowrate == 1 and not self.windowSize > math.pow(2, 31):
+        if self.windowrate == 1 and not self.windowSize > min(math.pow(2, 31),self.expected):
             self.windowSize += 1
-        elif self.windowrate == 2 and not self.windowSize > math.pow(2, 31):
+        elif self.windowrate == 2 and not self.windowSize > min(math.pow(2, 31),self.expected):
             self.windowSize *= 2
 
     def handle_duplicates(self, packets):
@@ -330,7 +340,7 @@ class handle_udp_client(Thread):
                 pass
 
     def timeout(self):
-        return time.time() - self.timer > 2
+        return (time.time() - self.timer) > (min(self.windowSize*0.5, 0.5))
 
 
 # read_thread class. Gets all the "answers" from the server according to client's commands

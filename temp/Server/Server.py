@@ -152,33 +152,35 @@ class handle_udp(Thread):
         self.prepare_packets()
         self.update_client()
         self.packets_acks = [False for i in range(self.packets.__len__())]
-        i=0
+        i = 0
+        ack_recv = 0
+        pack = 0
         while self.currPack < self.packets.__len__() or self.window.__len__() > 0:
-            print("Window Size: ", self.window_size , "Window_len",self.window.__len__())
 
             if self.window.__len__() < self.window_size:
-                print("Window Size: " , self.window_size)
                 self.prepare_window()
-                print("After Window Size: window len = " , self.window.__len__())
             for packet in self.window:
                 self.udp_sock.sendto(self.window[packet], self.client_udp)
+                pack += 1
+            print("Total packs sent so far" , pack)
+            print("Before Acks recivied - " , self.window.__len__())
             self.timer = time.time()
-            self.timeout = self.window_size * 0.5
-            print("Timeout = ", self.timeout)
-            while not time.time() - self.timer >= self.timeout and self.window.__len__()>0:
-                print("%.2gs" % (time.time() - self.timer) , "Timeout = " , self.timeout)
-                data = self.udp_sock.recvfrom(64)
-                if data:
-                    ack = int(data[0].decode('utf-8'))
-                    print("Curr Ack: ", ack)
-                    if not self.packets_acks[ack]:
-                        self.packets_acks[ack] = True
-                    print(f"Popping ack : {ack}")
-                    self.window.pop(ack)
-                    print("Current window size after pop",self.window.__len__())
-                else:
+            self.timeout = min(self.window_size * 0.5, 0.5)
+            while not time.time() - self.timer >= self.timeout and self.window.__len__() > 0:
+                try:
+                    data = self.udp_sock.recvfrom(64)
+                    if data:
+                        ack = int(data[0].decode('utf-8'))
+                        print("ACK : ", ack, ", Ack So Far - ", ack_recv)
+                        ack_recv += 1
+                        if not self.packets_acks[ack]:
+                            self.packets_acks[ack] = True
+                        self.window.pop(ack)
+                    else:
+                        time.sleep(0.1)
+                except:
                     time.sleep(0.1)
-
+            print(" window size after pop:" , self.window.__len__())
             print(f"i = {i}")
             i += 1
 
@@ -189,9 +191,10 @@ class handle_udp(Thread):
 
             self.update_window()
 
+
     def prepare_window(self):
-        while self.window.__len__() < self.window_size and self.currPack<self.packets.__len__():
-            print("Curr pack = " ,self.currPack)
+        while self.window.__len__() < self.window_size and self.currPack < self.packets.__len__():
+            print("Curr pack = ", self.currPack)
             if not self.packets_acks[self.currPack]:
                 self.window[self.currPack] = self.packets[self.currPack]
                 self.currPack += 1
@@ -215,9 +218,9 @@ class handle_udp(Thread):
                 return
 
     def update_window(self):
-        if self.window_grow == 1 and not self.window_size > math.pow(2, 31):
+        if self.window_grow == 1 and not self.window_size > min(math.pow(2, 31),self.packets.__len__()):
             self.window_size += 1
-        elif self.window_grow == 2 and not self.window_size > math.pow(2, 31):
+        elif self.window_grow == 2 and not self.window_size > min(math.pow(2, 31),self.packets.__len__()):
             self.window_size *= 2
 
     def update_client(self):
@@ -226,8 +229,8 @@ class handle_udp(Thread):
             print(msg)
             self.udp_sock.sendto(msg, self.client_udp)
             start = time.time()
-            print(time.time()-start)
-            while time.time()-start < self.timeout:
+            print(time.time() - start)
+            while time.time() - start < self.timeout:
                 data = self.udp_sock.recv(64)
                 if data:
                     len_packets = int(data.decode('utf-8'))
