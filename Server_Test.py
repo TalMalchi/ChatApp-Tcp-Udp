@@ -3,7 +3,7 @@ import signal
 import socket
 import threading
 import time
-import Server
+from Server import Server
 from unittest import TestCase
 
 

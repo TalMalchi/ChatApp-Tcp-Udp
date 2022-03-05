@@ -6,7 +6,7 @@ from PySimpleGUI import *
 from sys import argv
 
 ChatSize = 20
-serverAddr = ("10.0.2.15", 55000)
+serverAddr = ("127.0.0.1", 55000)
 
 
 class GUI:
