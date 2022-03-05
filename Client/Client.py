@@ -10,7 +10,7 @@ serverAddr = ("127.0.0.1", 55000)
 
 class GUI:
     def __init__(self):
-        self.readtrd : read_trd = None
+        self.readtrd: read_trd = None
         self.gui = PySimpleGUI
         self.sock: socket.socket = None
         self.window: PySimpleGUI.Window = None
@@ -77,10 +77,11 @@ class GUI:
 
             # download a specific file from the list
             if event == "-DOWNLOAD-":
+                self.window["Progbar"].UpdateBar(0)
                 file_name = self.window["in3"].get()
                 new_file_name = self.window["in4"].get()
                 self.sock.send(f"DOWNLOAD@{file_name}".encode('utf-8'))
-                udp_trd = handle_udp_client(new_file_name)
+                udp_trd = handle_udp_client(new_file_name, self.window ,self.gui)
                 udp_trd.start()
 
             if event == "PAUSE":
@@ -136,7 +137,6 @@ class GUI:
         self.window["-USERS-"].update(disabled=False)
         self.window["LOGOUT"].update(disabled=False)
         self.window["PAUSE"].update(disabled=False)
-
 
     # "helloScreen" - opens when new client connects to the server
     def set_layout(self):
@@ -202,7 +202,7 @@ class GUI:
                 ,
                 [
                     self.gui.Text("Progress Bar"),
-                    self.gui.ProgressBar(100, size=(20, 10))
+                    self.gui.ProgressBar(100, size=(20, 10),key="Progbar")
                 ]
             ]
         self.window.close()
@@ -217,28 +217,42 @@ class GUI:
         except:
             exit(-1)
 
-#download a file with UDP connection
+
+# download a file with UDP connection
 class handle_udp_client(Thread):
-    def __init__(self, filename):
+    def __init__(self, filename, window,gui):
         Thread.__init__(self)
-        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # init new UDP socket
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # init new UDP socket
         self.udp_server = None
         self.pause = False
         self.filename = filename
+        self.gui = gui
+        self.window = window
+
     # main run thread function
+
     def run(self):
-        self.udp_sock.bind(("", 55015))
+        try:
+            self.udp_sock.bind(("", 55015))
+        except OSError:
+            self.gui.popup_error("Socket already in use wait for download to finish and try again.\n"
+                                 "or restart program if problem procceed")
+            self.udp_sock.close()
+            return
         self.udp_sock.setblocking(0)
         start_time = time.time()
         timeout = 2
         expected = 0
         packets = []
+        start = datetime.datetime.now()
+        numofpacks = self.waitforserver()
         while True:
+            self.gui["Progbar"].UpdateBar(int(expected/numofpacks*100))
             if self.pause:
                 self.udp_sock.sendto("STOP".encode(), self.udp_server)
                 while self.pause:
                     time.sleep(2)
-                self.udp_sock.sendto("Resume".encode(),self.udp_server)
+                self.udp_sock.sendto("Resume".encode(), self.udp_server)
                 start_time = time.time()
             # to check reliable data transfer
             # Timer-> if there isn't new data in particular time, break
@@ -249,17 +263,14 @@ class handle_udp_client(Thread):
                 packet, self.udp_server = self.udp_sock.recvfrom(1024)
                 if packet:
                     num, data = self.packet_info(packet)
-                    print("Got packet ", num)
 
                     # send acknow-ledgment message to the server if the expected packet get succssfully
                     if num == expected:
-                        print("Sending ack message ", expected)
-                        self.send_filename(str(expected)) # למה?
+                        self.send_filename(str(expected))  # למה?
                         expected += 1
-                        packets.append((num, data)) #add the packet to packet_list
+                        packets.append((num, data))  # add the packet to packet_list
 
-                    else: # if we receive another packets //
-                        print("Sending acknlowedgement ", (expected - 1))
+                    else:  # if we receive another packets //
                         self.send_filename(str(expected - 1))
 
                     start_time = time.time()
@@ -267,9 +278,17 @@ class handle_udp_client(Thread):
                 else:
                     time.sleep(0.01)
 
-            except socket.error as err:
+            except (socket.error, OSError) as err:
+                if err is OSError:
+                    "Print Cannot download file please close program and try again"
+                    break
                 pass
-            # sort packets, handle reordering למה ממינים??
+
+
+
+        end = datetime.datetime.now()
+        print(end - start)
+        # sort packets, handle reordering למה ממינים??
         sorted(packets, key=lambda x: x[0])
 
         packets = self.handle_duplicates(packets)
@@ -282,7 +301,7 @@ class handle_udp_client(Thread):
 
         f.close()
         self.udp_sock.close()
-        #self.end_connection()
+        # self.end_connection()
 
     def handle_duplicates(self, packets):
         i = 0
@@ -299,14 +318,26 @@ class handle_udp_client(Thread):
     # def end_connection(self):
     #     self.udp_sock.close()
 
-    def make_packet(self, acknum, data=b''): #איפה משתמשים בזה?????
+    def make_packet(self, acknum, data=b''):  # איפה משתמשים בזה?????
         ackbytes = acknum.to_bytes(4, byteorder='little', signed=True)
         return ackbytes + data
 
-    #extract packet's information from bytes to int
+    # extract packet's information from bytes to int
     def packet_info(self, packet):
         num = int.from_bytes(packet[0:4], byteorder='little', signed=True)
         return num, packet[4:]
+
+    def waitforserver(self):
+        while True:
+            try:
+                data = self.udp_sock.recvfrom(64)
+                if data:
+                    numofpack =int(data[0].decode())
+                    self.udp_server = data[1]
+                    print("Got Server udp address")
+                    return numofpack
+            except BlockingIOError:
+                pass
 
 
 # read_thread class. Gets all the "answers" from the server according to client's commands

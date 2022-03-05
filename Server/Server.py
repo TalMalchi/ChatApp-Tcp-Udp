@@ -48,7 +48,7 @@ class Server:
                 elif cmd == "SHOWFILES":
                     msg = "SHOWFILES@"
                     try:
-                        msg += '\n'.join(file for file in os.listdir("files"))
+                        msg += '\n'.join(file for file in os.listdir() if file != "Server.py")
                     except os.error:
                         print("File Dir doesnt Exist")
                     client_sock.send(msg.encode('utf-8'))
@@ -63,7 +63,6 @@ class Server:
 
                 # download a file selected by the client
                 elif cmd == "DOWNLOAD":
-                    data = "files/" + data
                     if os.path.isfile(data):
                         print("file exist")
                         udp_conn = handle_udp(client_sock.getpeername(), data)
@@ -143,15 +142,14 @@ class handle_udp(Thread):
         self.filename = file_name
 
     def run(self):
+        print("In udp thread")
         packets = []
         num = 0
-        print("GOT HERE")
         # open the file with binary
         with open(self.filename, 'rb') as file:
             while True:
                 # read chunck of 1020 bytes from file, to build packets with 1024 bytes (+4 bytes- ack's num)
                 file_contents = file.read(978)
-                print(file_contents)
                 while file_contents:
                     # init packets array
                     packets.append(num.to_bytes(4, byteorder="little", signed=True) + file_contents)
@@ -159,16 +157,15 @@ class handle_udp(Thread):
                     # read the next file bytes
                     file_contents = file.read(978)
                 file.close()
-
+                print("Before ready msg")
                 pack_len = len(packets)
-                print(pack_len)
                 next_pack = 0
                 counter_packets = 0
                 window = self.set_window(pack_len, counter_packets)
-
+                self.udp_sock.sendto(pack_len.__str__().encode(),self.client_udp)
+                print("Sent ready msg")
                 while counter_packets < pack_len:
                     while next_pack < counter_packets + window and next_pack < pack_len:
-                        print(self.client_udp)
                         # (data,(ip,port))
                         self.udp_sock.sendto(packets[next_pack], self.client_udp)
                         next_pack += 1
@@ -194,7 +191,7 @@ class handle_udp(Thread):
                         next_pack = counter_packets
 
                     else:
-                        print("shifting window")
+                        self.window_size *= 2
                         self.window_size = self.set_window(pack_len, counter_packets)
                 break
 
