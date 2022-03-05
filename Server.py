@@ -87,7 +87,6 @@ class Server:
                     self.active_clients[sender].send(f"PMSG_S@{sendto}@{new_msg}".encode('utf-8'))
 
             except:
-                print(f"{client_addr} Disconnected from server.\n")
                 for k, v in self.active_clients.items():
                     if v is client_sock:
                         self.remove_socket(v)
