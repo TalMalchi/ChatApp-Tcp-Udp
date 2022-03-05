@@ -85,6 +85,7 @@ class GUI:
                 udp_trd = handle_udp_client(new_file_name, self.window, self.gui)
                 udp_trd.start()
 
+            # Pausing Download.
             if event == "PAUSE":
                 if not udp_trd.pause:
                     udp_trd.pause = True
@@ -92,7 +93,7 @@ class GUI:
                 else:
                     udp_trd.pause = False
                     self.window["PAUSE"].update(text="Pause")
-
+            # Logging out
             if event == "LOGOUT":
                 try:
                     self.sock.send("LOGOUT@Logging out\n".encode())
@@ -102,16 +103,17 @@ class GUI:
                 self.window.close()
                 self.welcome_screen()
 
-            # show all logges in users
+            # Show all logges in users
             if event == "-USERS-":
                 self.sock.send("SHOWUSERS@".encode('utf-8'))
 
+            # Getting users list
             if event == "-USERS LIST-":
                 if len(values["-USERS LIST-"]) > 0:
                     user_name = values["-USERS LIST-"][0]
                     self.window["in1"].update(user_name)
 
-            # send a message
+            # send a message to chat
             if event == "btn_send":
                 if len(values["in2"]) > 0:
                     sender = values["user_name"]
@@ -220,6 +222,12 @@ class GUI:
 
 
 # download a file with UDP connection
+# this class represents UDP Thread Class that handles udp file
+# getting file from server using udp reliable fast connection with congestion control.
+# by using this class user can keep commuincating with server while download the request file.
+# File reciving is using go-back-n algorithm implemnted on udp connection.
+
+
 class handle_udp_client(Thread):
     def __init__(self, filename, window, gui):
         Thread.__init__(self)
@@ -267,12 +275,12 @@ class handle_udp_client(Thread):
 
                     # send acknow-ledgment message to the server if the expected packet get succssfully
                     if num == expected:
-                        self.send_filename(str(expected))  # למה?
+                        self.send_msg(str(expected))
                         expected += 1
                         packets.append((num, data))  # add the packet to packet_list
 
                     else:  # if we receive another packets //
-                        self.send_filename(str(expected - 1))
+                        self.send_msg(str(expected - 1))
 
                     start_time = time.time()
 
@@ -287,7 +295,6 @@ class handle_udp_client(Thread):
 
         end = datetime.datetime.now()
         print(end - start)
-        # sort packets, handle reordering למה ממינים??
         sorted(packets, key=lambda x: x[0])
 
         packets = self.handle_duplicates(packets)
@@ -302,6 +309,8 @@ class handle_udp_client(Thread):
         self.udp_sock.close()
         # self.end_connection()
 
+# handling dupliactes recivied twice probably wont need too but just for safe.
+    # better safe than sorry
     def handle_duplicates(self, packets):
         i = 0
         while i < len(packets) - 1:
@@ -311,21 +320,16 @@ class handle_udp_client(Thread):
                 i += 1
         return packets
 
-    def send_filename(self, filename):
-        return self.udp_sock.sendto(filename.encode(), self.udp_server)
-
-    # def end_connection(self):
-    #     self.udp_sock.close()
-
-    def make_packet(self, acknum, data=b''):  # איפה משתמשים בזה?????
-        ackbytes = acknum.to_bytes(4, byteorder='little', signed=True)
-        return ackbytes + data
+    # sending
+    def send_msg(self, msg):
+        return self.udp_sock.sendto(msg.encode(), self.udp_server)
 
     # extract packet's information from bytes to int
     def packet_info(self, packet):
         num = int.from_bytes(packet[0:4], byteorder='little', signed=True)
         return num, packet[4:]
 
+#   waiting for server to get server ip and packet size
     def waitforserver(self):
         while True:
             try:
@@ -419,8 +423,3 @@ if __name__ == '__main__':
         port = int(argv[2])
     gui = GUI()
     gui.welcome_screen()
-
-# TODO צריך לבדוק לגבי אלגוריתם CC 1.
-# TODO לבדוק קוד ואינפוטים יש עטויות
-# TODO בדיקות קצה
-# TODO לדאוג למחיקת משתמש ב Signals מסויימים

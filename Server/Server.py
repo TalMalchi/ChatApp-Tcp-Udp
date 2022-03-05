@@ -130,6 +130,10 @@ class Server:
 
 
 # this class handle with file download with UDP protocol
+# this class represents UDP Thread Class that handles udp file
+# sending to client using udp reliable fast connection with congestion control.
+# by using this class user can keep commuincating with server while download the request file.
+# File Sending is using go-back-n algorithm implemnted on udp connection.
 class handle_udp(Thread):
     def __init__(self, address, file_name):
         Thread.__init__(self)
