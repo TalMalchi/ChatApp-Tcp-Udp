@@ -1,5 +1,5 @@
 from unittest import TestCase
-from Client import GUI
+from Client.Client import GUI
 
 
 class ClientTest(TestCase):
